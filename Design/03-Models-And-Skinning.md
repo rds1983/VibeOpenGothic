@@ -282,6 +282,8 @@ call site, which is not enough for scripts, events or root motion.
   source-to-DrModel bone map. The loader attaches one shared root `DrMesh` before
   the `DrModel` is constructed, so `DrModel.Meshes` is populated; the renderer
   fills it with skinned and static attachment parts after GPU upload.
+- `DrModelInstance.GetSkinTransforms` supplies the per-skin bone matrices; the
+  renderer does not duplicate them in its tag payloads.
 - `ModelSkinBuilder` builds one `DrSkin` per soft mesh, compacting the bones
   that actually carry weight. A mesh with more than 72 used bones keeps the 72
   with the largest total weight, renormalizes the surviving influences and logs a

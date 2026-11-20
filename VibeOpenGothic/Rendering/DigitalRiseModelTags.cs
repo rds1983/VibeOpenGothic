@@ -11,19 +11,14 @@ namespace VibeOpenGothic.Rendering;
 /// types explicit makes the object graph readable and avoids casting anonymous
 /// tuples or raw indexes between the renderer and the model containers.
 /// </summary>
-public sealed record DrModelTag(
-	GothicModelAsset Asset,
-	int SkinnedPartCount);
+public sealed record DrModelTag(GothicModelAsset Asset);
 
 public sealed record DrModelInstanceTag(
 	Matrix Transform,
-	AnimationController? Controller,
-	Matrix[][] Transforms);
+	AnimationController? Controller);
 
 public sealed record DrMeshTag(GothicModelAsset Asset);
 
-public sealed record DrMeshPartTag(int PartIndex);
-
-public sealed record DrMeshPartTag2(int BoneIndex);
+public sealed record DrMeshPartTag(int BoneIndex);
 
 public sealed record DrMaterialTag(MaterialDesc Descriptor);

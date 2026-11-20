@@ -144,21 +144,7 @@ public sealed class SkinnedModelRenderer : IDisposable
 			{
 				if (part.Skin is not null)
 				{
-					if (part.Tag is not DrMeshPartTag partTag ||
-						(uint)partTag.PartIndex >= (uint)state.Transforms.Length)
-					{
-						continue;
-					}
-
-					var matrices = state.Transforms[partTag.PartIndex];
-					for (var jointIndex = 0; jointIndex < part.Skin.Joints.Length; jointIndex++)
-					{
-						var joint = part.Skin.Joints[jointIndex];
-						matrices[jointIndex] =
-							joint.InverseBindTransform *
-							instance.GetBoneGlobalTransform(joint.Bone.Index);
-					}
-
+					var matrices = instance.GetSkinTransforms(part.Skin.SkinIndex);
 					var descriptor = GetDescriptor(part);
 					var texture = part.Material?.DiffuseTexture;
 
@@ -188,7 +174,7 @@ public sealed class SkinnedModelRenderer : IDisposable
 					drawCalls++;
 					polygons += part.PrimitiveCount;
 				}
-				else if (part.Tag is DrMeshPartTag2 attachmentTag)
+				else if (part.Tag is DrMeshPartTag attachmentTag)
 				{
 					var nodeTransform = instance.GetBoneGlobalTransform(
 						attachmentTag.BoneIndex);
@@ -258,7 +244,6 @@ public sealed class SkinnedModelRenderer : IDisposable
 			? asset.Model.Meshes[0]
 			: new DrMesh { Name = asset.Key };
 		mesh.Tag = new DrMeshTag(asset);
-		var skinnedPartCount = 0;
 
 		foreach (var sourceMesh in asset.Meshes)
 		{
@@ -305,7 +290,6 @@ public sealed class SkinnedModelRenderer : IDisposable
 				{
 					Material = material,
 					Skin = sourceMesh.Skin,
-					Tag = new DrMeshPartTag(skinnedPartCount++),
 				};
 
 				mesh.MeshParts.Add(part);
@@ -356,14 +340,14 @@ public sealed class SkinnedModelRenderer : IDisposable
 					subMesh.IndexOffset)
 				{
 					Material = material,
-					Tag = new DrMeshPartTag2(bone.Index),
+					Tag = new DrMeshPartTag(bone.Index),
 				};
 
 				mesh.MeshParts.Add(part);
 			}
 		}
 
-		asset.Model.Tag = new DrModelTag(asset, skinnedPartCount);
+		asset.Model.Tag = new DrModelTag(asset);
 		return asset.Model;
 	}
 
@@ -383,22 +367,7 @@ public sealed class SkinnedModelRenderer : IDisposable
 			controller.Update(TimeSpan.Zero);
 		}
 
-		var mesh = model.Root.Mesh;
-		if (mesh is null)
-		{
-			return;
-		}
-
-		var transforms = new Matrix[info.SkinnedPartCount][];
-		foreach (var part in mesh.MeshParts)
-		{
-			if (part.Skin is not null && part.Tag is DrMeshPartTag partTag)
-			{
-				transforms[partTag.PartIndex] = new Matrix[part.Skin.Joints.Length];
-			}
-		}
-
-		instance.Tag = new DrModelInstanceTag(transform, controller, transforms);
+		instance.Tag = new DrModelInstanceTag(transform, controller);
 		_instances.Add(instance);
 	}
 
