@@ -243,7 +243,6 @@ public sealed class SkinnedModelRenderer : IDisposable
 		var mesh = asset.Model.Meshes.Length > 0
 			? asset.Model.Meshes[0]
 			: new DrMesh { Name = asset.Key };
-		mesh.Tag = new DrMeshTag(asset);
 
 		foreach (var sourceMesh in asset.Meshes)
 		{

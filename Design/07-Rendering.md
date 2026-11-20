@@ -82,11 +82,10 @@ and camera are static, so repeated runs are byte-identical.
   constructing `DrModel`, so `DrModel.Meshes` is populated; GPU upload fills that
   mesh with skinned and attachment parts.
 - Runtime state uses DigitalRiseModel objects directly, with typed tag payloads in
-  `Rendering/DigitalRiseModelTags.cs`: `DrModelTag` stores the asset; `DrMeshTag`
-  the asset back-reference; `DrMeshPartTag` an attachment's bone index;
-  `DrModelInstanceTag` the transform and animation controller; and
-  `DrMaterialTag` the `MaterialDesc`. There are no parallel GPU model or instance
-  wrapper classes.
+  `Rendering/DigitalRiseModelTags.cs`: `DrModelTag` stores the asset;
+  `DrMeshPartTag` an attachment's bone index; `DrModelInstanceTag` the transform
+  and animation controller; and `DrMaterialTag` the `MaterialDesc`. There are no
+  parallel GPU model or instance wrapper classes.
 - Skinned bone matrices come directly from
   `DrModelInstance.GetSkinTransforms(part.Skin.SkinIndex)`; the renderer does not
   keep a second per-instance `Matrix[][]`, because `DrModelInstance` already

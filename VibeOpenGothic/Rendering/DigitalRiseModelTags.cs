@@ -17,8 +17,6 @@ public sealed record DrModelInstanceTag(
 	Matrix Transform,
 	AnimationController? Controller);
 
-public sealed record DrMeshTag(GothicModelAsset Asset);
-
 public sealed record DrMeshPartTag(int BoneIndex);
 
 public sealed record DrMaterialTag(MaterialDesc Descriptor);
