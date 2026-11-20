@@ -2,7 +2,6 @@ using DigitalRiseModel;
 using DigitalRiseModel.Animation;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using VibeOpenGothic.Assets.Materials;
 using VibeOpenGothic.Assets.Meshes;
 using VibeOpenGothic.Assets.Models;
 using VibeOpenGothic.Assets.Skins;
@@ -18,16 +17,8 @@ namespace VibeOpenGothic.Rendering;
 /// </summary>
 public sealed class SkinnedModelRenderer : IDisposable
 {
-	private static readonly Color FogColor = new(92, 103, 112);
-
-	private readonly GpuTextureCache _textures;
-	private readonly SkinnedEffect _effect;
-	private readonly BasicEffect _basic;
-	private readonly AlphaTestEffect _alphaTest;
 	private readonly Dictionary<string, DrModel> _models = new(StringComparer.OrdinalIgnoreCase);
 	private readonly List<ModelInstanceState> _instances = new();
-	private Matrix _view = Matrix.Identity;
-	private Matrix _projection = Matrix.Identity;
 	private bool _disposed;
 
 	public SkinnedModelRenderer(
@@ -40,43 +31,6 @@ public sealed class SkinnedModelRenderer : IDisposable
 		ArgumentNullException.ThrowIfNull(textures);
 		ArgumentNullException.ThrowIfNull(world);
 		progress ??= _ => { };
-
-		_textures = textures;
-		_effect = new SkinnedEffect(device)
-		{
-			WeightsPerVertex = 4,
-			PreferPerPixelLighting = false,
-			FogEnabled = true,
-			FogColor = FogColor.ToVector3(),
-			FogStart = 15000f,
-			FogEnd = 140000f,
-		};
-		_effect.EnableDefaultLighting();
-		_effect.AmbientLightColor = new Vector3(0.62f, 0.64f, 0.68f);
-
-		_basic = new BasicEffect(device)
-		{
-			PreferPerPixelLighting = false,
-			TextureEnabled = false,
-			LightingEnabled = true,
-			VertexColorEnabled = false,
-			FogEnabled = true,
-			FogColor = FogColor.ToVector3(),
-			FogStart = 15000f,
-			FogEnd = 140000f,
-		};
-		_basic.EnableDefaultLighting();
-		_basic.AmbientLightColor = new Vector3(0.62f, 0.64f, 0.68f);
-
-		_alphaTest = new AlphaTestEffect(device)
-		{
-			AlphaFunction = CompareFunction.Greater,
-			ReferenceAlpha = 128,
-			FogEnabled = true,
-			FogColor = FogColor.ToVector3(),
-			FogStart = 15000f,
-			FogEnd = 140000f,
-		};
 
 		foreach (var asset in world.Models.Values)
 		{
@@ -100,30 +54,13 @@ public sealed class SkinnedModelRenderer : IDisposable
 			$"{_instances.Count} instances");
 	}
 
-	public int LastDrawCalls { get; private set; }
-
-	public int LastDrawnPolygons { get; private set; }
-
-	public void SetCamera(Matrix view, Matrix projection)
+	public void Draw(ForwardRenderer renderer, GameTime gameTime)
 	{
-		_view = view;
-		_projection = projection;
-	}
-
-	public void Draw(GameTime gameTime)
-	{
+		ArgumentNullException.ThrowIfNull(renderer);
 		ArgumentNullException.ThrowIfNull(gameTime);
 		ObjectDisposedException.ThrowIf(_disposed, this);
 
-		var device = _effect.GraphicsDevice;
-		device.DepthStencilState = DepthStencilState.Default;
-		device.BlendState = BlendState.Opaque;
-		device.SamplerStates[0] = SamplerState.LinearWrap;
-
-		var drawCalls = 0;
-		var polygons = 0;
 		var elapsed = gameTime.ElapsedGameTime;
-
 		foreach (var instance in _instances)
 		{
 			instance.Controller?.Update(elapsed);
@@ -138,61 +75,19 @@ public sealed class SkinnedModelRenderer : IDisposable
 			{
 				if (part.Skin is not null)
 				{
-					var matrices = instance.Instance.GetSkinTransforms(part.Skin.SkinIndex);
-					var descriptor = GetDescriptor(part);
-					var texture = part.Material?.DiffuseTexture;
-
-					_effect.World = instance.Transform;
-					_effect.View = _view;
-					_effect.Projection = _projection;
-					_effect.Texture = texture ?? _textures.White;
-					_effect.DiffuseColor = descriptor.Color.ToVector3();
-					_effect.SetBoneTransforms(matrices);
-
-					device.RasterizerState = descriptor.IsTwoSided
-						? RasterizerState.CullNone
-						: RasterizerState.CullCounterClockwise;
-					device.BlendState = descriptor.AlphaMode == MaterialAlphaMode.Solid
-						? BlendState.Opaque
-						: BlendState.AlphaBlend;
-
-					_effect.CurrentTechnique.Passes[0].Apply();
-					device.SetVertexBuffer(part.VertexBuffer);
-					device.Indices = part.IndexBuffer;
-					device.DrawIndexedPrimitives(
-						part.PrimitiveType,
-						part.VertexOffset,
-						part.StartIndex,
-						part.PrimitiveCount);
-
-					drawCalls++;
-					polygons += part.PrimitiveCount;
+					renderer.DrawMeshPart(
+						part,
+						instance.Transform,
+						instance.Instance.GetSkinTransforms(part.Skin.SkinIndex));
 				}
 				else if (part.Tag is DrMeshPartTag attachmentTag)
 				{
 					var nodeTransform = instance.Instance.GetBoneGlobalTransform(
 						attachmentTag.BoneIndex);
-					var world = nodeTransform * instance.Transform;
-
-					ApplyAttachmentMaterial(part, world);
-					device.SetVertexBuffer(part.VertexBuffer);
-					device.Indices = part.IndexBuffer;
-					device.DrawIndexedPrimitives(
-						part.PrimitiveType,
-						part.VertexOffset,
-						part.StartIndex,
-						part.PrimitiveCount);
-
-					drawCalls++;
-					polygons += part.PrimitiveCount;
+					renderer.DrawMeshPart(part, nodeTransform * instance.Transform);
 				}
 			}
 		}
-
-		LastDrawCalls = drawCalls;
-		LastDrawnPolygons = polygons;
-		device.RasterizerState = RasterizerState.CullCounterClockwise;
-		device.BlendState = BlendState.Opaque;
 	}
 
 	public void Dispose()
@@ -203,9 +98,6 @@ public sealed class SkinnedModelRenderer : IDisposable
 		}
 
 		_disposed = true;
-		_effect.Dispose();
-		_basic.Dispose();
-		_alphaTest.Dispose();
 
 		foreach (var model in _models.Values)
 		{
@@ -361,47 +253,6 @@ public sealed class SkinnedModelRenderer : IDisposable
 		}
 
 		_instances.Add(new ModelInstanceState(instance, controller, transform));
-	}
-
-	private void ApplyAttachmentMaterial(DrMeshPart part, Matrix world)
-	{
-		var descriptor = GetDescriptor(part);
-		var texture = part.Material?.DiffuseTexture;
-		var device = part.VertexBuffer.GraphicsDevice;
-		device.RasterizerState = descriptor.IsTwoSided
-			? RasterizerState.CullNone
-			: RasterizerState.CullCounterClockwise;
-		device.BlendState = BlendState.Opaque;
-
-		if (descriptor.AlphaMode == MaterialAlphaMode.Solid)
-		{
-			_basic.World = world;
-			_basic.View = _view;
-			_basic.Projection = _projection;
-			_basic.LightingEnabled = true;
-			_basic.TextureEnabled = texture is not null;
-			_basic.Texture = texture;
-			_basic.DiffuseColor = descriptor.Color.ToVector3();
-			_basic.Alpha = descriptor.AlphaWeight;
-			_basic.CurrentTechnique.Passes[0].Apply();
-		}
-		else
-		{
-			_alphaTest.World = world;
-			_alphaTest.View = _view;
-			_alphaTest.Projection = _projection;
-			_alphaTest.Texture = texture ?? _textures.Placeholder;
-			_alphaTest.DiffuseColor = descriptor.Color.ToVector3();
-			_alphaTest.Alpha = descriptor.AlphaWeight;
-			_alphaTest.CurrentTechnique.Passes[0].Apply();
-		}
-	}
-
-	private static MaterialDesc GetDescriptor(DrMeshPart part)
-	{
-		return part.Material?.Tag is DrMaterialTag tag
-			? tag.Descriptor
-			: MaterialDesc.Default;
 	}
 
 	private sealed record ModelInstanceState(

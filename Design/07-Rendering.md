@@ -107,6 +107,23 @@ and camera are static, so repeated runs are byte-identical.
   a custom skinned effect lands in the visual-parity pass.
 - The overlay counters include skinned model draw calls and triangles.
 
+### Forward renderer
+
+`ForwardRenderer` owns the stock 3D effects (`BasicEffect`,
+`AlphaTestEffect`, `SkinnedEffect`), camera view/projection state and drawing
+statistics. `WorldRenderer` and `SkinnedModelRenderer` only upload/organize
+assets and call:
+
+- `DrawMeshPart(DrMeshPart, Matrix, optional bone matrices)`
+- `DrawRange(...)` for the merged world mesh ranges
+
+`DrawMeshPart` chooses `SkinnedEffect` when `DrMeshPart.Skin` is set and
+`BasicEffect`/`AlphaTestEffect` otherwise, applies materials and counts draw
+calls, polygons and static/skinned calls for the frame. `BeginFrame` saves and
+applies the depth-stencil, blend, rasterizer and sampler-0 states; `EndFrame`
+restores them and leaves statistics available for the overlay. GothicRenderer
+exposes the total counters to the debug overlay.
+
 ## Platform and device
 
 - MonoGame DesktopGL, `GraphicsProfile.HiDef`.
