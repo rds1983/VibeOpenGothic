@@ -28,6 +28,19 @@ Key decisions:
 | Gothic file formats, Daedalus VM | ZenKitCS |
 | Collision, character physics | BepuPhysics2 |
 
+## Source size
+
+Game source only: `VibeOpenGothic/` excluding `bin/`, `obj/` and the test project.
+
+| Metric | Value |
+| --- | --- |
+| C# files | 125 |
+| C# lines (physical / non-blank) | 10,107 / 8,611 |
+| Other source files | 3 (2 `.xmmp`, 1 `.csproj`) |
+| Total source size | 256,535 bytes (250.5 KiB) |
+
+Counts include generated Myra files. Update this table when source size changes materially.
+
 ## Requirements
 
 - .NET SDK 9.0.200 or newer (10.x recommended). The projects target net8.0; the
@@ -48,11 +61,13 @@ dotnet run --project VibeOpenGothic -- -g "C:\Gothic II"
 The current build loads and renders the default Gothic II world from a free
 camera, including static VOB props and model VOBs. Escape or Alt+F4 exits; `F3`
 toggles a debug overlay with FPS, draw calls and submitted triangles, and a
-bottom-left HUD lists the current controls. Use `--spawn-model <mds>` to place a
-developer preview model in front of the start point. Gothic II is auto-detected
-from settings, `VOG_GOTHIC_PATH`, common paths and Steam library folders;
-`-g <path>` overrides detection. Settings and `log.txt` are written to
-`%LOCALAPPDATA%\VibeOpenGothic` (override with `--data-dir`).
+bottom-left HUD lists the current controls. Normal runs spawn an Orc idle
+showcase in front of the start point; use `--spawn-model <mds>` to choose a
+different model or `--screenshot` (which omits the showcase) for deterministic
+captures. Gothic II is auto-detected from settings, `VOG_GOTHIC_PATH`, common
+paths and Steam library folders; `-g <path>` overrides detection. Settings and
+`log.txt` are written to `%LOCALAPPDATA%\VibeOpenGothic` (override with
+`--data-dir`).
 
 ## Repository layout
 

@@ -12,8 +12,9 @@ namespace VibeOpenGothic.Rendering;
 
 /// <summary>
 /// Uploads and draws skinned MDS VOBs with stock <see cref="SkinnedEffect"/>.
-/// Each VOB gets its own <see cref="DrModelInstance"/> and animation controller;
-/// meshes, skins and textures are shared per unique model.
+/// The runtime containers are DigitalRiseModel types: <see cref="DrModel"/>,
+/// <see cref="DrModelInstance"/>, <see cref="DrMesh"/> and <see cref="DrMeshPart"/>.
+/// Per-model, per-part and per-instance state lives in their <c>Tag</c> objects.
 /// </summary>
 public sealed class SkinnedModelRenderer : IDisposable
 {
@@ -23,8 +24,8 @@ public sealed class SkinnedModelRenderer : IDisposable
 	private readonly SkinnedEffect _effect;
 	private readonly BasicEffect _basic;
 	private readonly AlphaTestEffect _alphaTest;
-	private readonly Dictionary<string, ModelGpu> _models = new(StringComparer.OrdinalIgnoreCase);
-	private readonly List<ModelInstance> _instances = new();
+	private readonly Dictionary<string, DrModel> _models = new(StringComparer.OrdinalIgnoreCase);
+	private readonly List<DrModelInstance> _instances = new();
 	private Matrix _view = Matrix.Identity;
 	private Matrix _projection = Matrix.Identity;
 	private bool _disposed;
@@ -79,21 +80,19 @@ public sealed class SkinnedModelRenderer : IDisposable
 
 		foreach (var asset in world.Models.Values)
 		{
-			var gpu = CreateModel(device, textures, asset, progress);
-			if (gpu is not null)
+			var model = CreateModel(device, textures, asset, progress);
+			if (model is not null)
 			{
-				_models[asset.Key] = gpu;
+				_models[asset.Key] = model;
 			}
 		}
 
 		foreach (var vob in world.ModelVobs)
 		{
-			if (!_models.TryGetValue(vob.ModelKey, out var gpu))
+			if (_models.TryGetValue(vob.ModelKey, out var model))
 			{
-				continue;
+				CreateInstance(model, vob.Transform);
 			}
-
-			_instances.Add(new ModelInstance(gpu, vob.Transform));
 		}
 
 		progress(
@@ -127,75 +126,85 @@ public sealed class SkinnedModelRenderer : IDisposable
 
 		foreach (var instance in _instances)
 		{
-			instance.Controller?.Update(elapsed);
-
-			foreach (var part in instance.Gpu.Parts)
+			if (instance.Tag is not DrModelInstanceTag state ||
+				instance.Model.Tag is not DrModelTag)
 			{
-				var descriptor = part.Descriptor;
-				var texture = part.Texture;
-				var skin = part.Part.Skin;
-				if (skin is null)
-				{
-					continue;
-				}
-
-				var matrices = instance.Transforms[part.Index];
-				for (var jointIndex = 0; jointIndex < skin.Joints.Length; jointIndex++)
-				{
-					var joint = skin.Joints[jointIndex];
-					matrices[jointIndex] =
-						joint.InverseBindTransform *
-						instance.Instance.GetBoneGlobalTransform(joint.Bone.Index);
-				}
-
-				_effect.World = instance.Transform;
-				_effect.View = _view;
-				_effect.Projection = _projection;
-				_effect.Texture = texture ?? _textures.White;
-				_effect.DiffuseColor = descriptor.Color.ToVector3();
-				_effect.SetBoneTransforms(matrices);
-
-				var partDevice = part.Part.VertexBuffer.GraphicsDevice;
-				partDevice.RasterizerState = descriptor.IsTwoSided
-					? RasterizerState.CullNone
-					: RasterizerState.CullCounterClockwise;
-				partDevice.BlendState = descriptor.AlphaMode == MaterialAlphaMode.Solid
-					? BlendState.Opaque
-					: BlendState.AlphaBlend;
-
-				_effect.CurrentTechnique.Passes[0].Apply();
-				partDevice.SetVertexBuffer(part.Part.VertexBuffer);
-				partDevice.Indices = part.Part.IndexBuffer;
-				partDevice.DrawIndexedPrimitives(
-					part.Part.PrimitiveType,
-					part.Part.VertexOffset,
-					part.Part.StartIndex,
-					part.Part.PrimitiveCount);
-
-				drawCalls++;
-				polygons += part.Part.PrimitiveCount;
+				continue;
 			}
 
-			foreach (var attachment in instance.Gpu.Attachments)
-			{
-				var nodeTransform = instance.Instance.GetBoneGlobalTransform(
-					attachment.BoneIndex);
-				var world = nodeTransform * instance.Transform;
+			state.Controller?.Update(elapsed);
 
-				foreach (var part in attachment.Parts)
+			var mesh = instance.Model.Root.Mesh;
+			if (mesh is null)
+			{
+				continue;
+			}
+
+			foreach (var part in mesh.MeshParts)
+			{
+				if (part.Skin is not null)
 				{
-					ApplyAttachmentMaterial(part, world);
-					var partDevice = part.Part.VertexBuffer.GraphicsDevice;
-					partDevice.SetVertexBuffer(part.Part.VertexBuffer);
-					partDevice.Indices = part.Part.IndexBuffer;
-					partDevice.DrawIndexedPrimitives(
-						part.Part.PrimitiveType,
-						part.Part.VertexOffset,
-						part.Part.StartIndex,
-						part.Part.PrimitiveCount);
+					if (part.Tag is not DrMeshPartTag partTag ||
+						(uint)partTag.PartIndex >= (uint)state.Transforms.Length)
+					{
+						continue;
+					}
+
+					var matrices = state.Transforms[partTag.PartIndex];
+					for (var jointIndex = 0; jointIndex < part.Skin.Joints.Length; jointIndex++)
+					{
+						var joint = part.Skin.Joints[jointIndex];
+						matrices[jointIndex] =
+							joint.InverseBindTransform *
+							instance.GetBoneGlobalTransform(joint.Bone.Index);
+					}
+
+					var descriptor = GetDescriptor(part);
+					var texture = part.Material?.DiffuseTexture;
+
+					_effect.World = state.Transform;
+					_effect.View = _view;
+					_effect.Projection = _projection;
+					_effect.Texture = texture ?? _textures.White;
+					_effect.DiffuseColor = descriptor.Color.ToVector3();
+					_effect.SetBoneTransforms(matrices);
+
+					device.RasterizerState = descriptor.IsTwoSided
+						? RasterizerState.CullNone
+						: RasterizerState.CullCounterClockwise;
+					device.BlendState = descriptor.AlphaMode == MaterialAlphaMode.Solid
+						? BlendState.Opaque
+						: BlendState.AlphaBlend;
+
+					_effect.CurrentTechnique.Passes[0].Apply();
+					device.SetVertexBuffer(part.VertexBuffer);
+					device.Indices = part.IndexBuffer;
+					device.DrawIndexedPrimitives(
+						part.PrimitiveType,
+						part.VertexOffset,
+						part.StartIndex,
+						part.PrimitiveCount);
 
 					drawCalls++;
-					polygons += part.Part.PrimitiveCount;
+					polygons += part.PrimitiveCount;
+				}
+				else if (part.Tag is DrMeshPartTag2 attachmentTag)
+				{
+					var nodeTransform = instance.GetBoneGlobalTransform(
+						attachmentTag.BoneIndex);
+					var world = nodeTransform * state.Transform;
+
+					ApplyAttachmentMaterial(part, world);
+					device.SetVertexBuffer(part.VertexBuffer);
+					device.Indices = part.IndexBuffer;
+					device.DrawIndexedPrimitives(
+						part.PrimitiveType,
+						part.VertexOffset,
+						part.StartIndex,
+						part.PrimitiveCount);
+
+					drawCalls++;
+					polygons += part.PrimitiveCount;
 				}
 			}
 		}
@@ -220,47 +229,20 @@ public sealed class SkinnedModelRenderer : IDisposable
 
 		foreach (var model in _models.Values)
 		{
-			model.Dispose();
+			if (model.Tag is not DrModelTag)
+			{
+				continue;
+			}
+
+			model.Root.Mesh?.Dispose();
+			model.Tag = null;
 		}
 
 		_models.Clear();
 		_instances.Clear();
 	}
 
-	private void ApplyAttachmentMaterial(ModelGpuPart part, Matrix world)
-	{
-		var descriptor = part.Descriptor;
-		var device = part.Part.VertexBuffer.GraphicsDevice;
-		device.RasterizerState = descriptor.IsTwoSided
-			? RasterizerState.CullNone
-			: RasterizerState.CullCounterClockwise;
-		device.BlendState = BlendState.Opaque;
-
-		if (descriptor.AlphaMode == MaterialAlphaMode.Solid)
-		{
-			_basic.World = world;
-			_basic.View = _view;
-			_basic.Projection = _projection;
-			_basic.LightingEnabled = true;
-			_basic.TextureEnabled = part.Texture is not null;
-			_basic.Texture = part.Texture;
-			_basic.DiffuseColor = descriptor.Color.ToVector3();
-			_basic.Alpha = descriptor.AlphaWeight;
-			_basic.CurrentTechnique.Passes[0].Apply();
-		}
-		else
-		{
-			_alphaTest.World = world;
-			_alphaTest.View = _view;
-			_alphaTest.Projection = _projection;
-			_alphaTest.Texture = part.Texture ?? _textures.Placeholder;
-			_alphaTest.DiffuseColor = descriptor.Color.ToVector3();
-			_alphaTest.Alpha = descriptor.AlphaWeight;
-			_alphaTest.CurrentTechnique.Passes[0].Apply();
-		}
-	}
-
-	private static ModelGpu? CreateModel(
+	private static DrModel? CreateModel(
 		GraphicsDevice device,
 		GpuTextureCache textures,
 		GothicModelAsset asset,
@@ -272,11 +254,11 @@ public sealed class SkinnedModelRenderer : IDisposable
 			return null;
 		}
 
-		var mesh = new DrMesh
-		{
-			Name = asset.Key,
-		};
-		var parts = new List<ModelGpuPart>();
+		var mesh = asset.Model.Meshes.Length > 0
+			? asset.Model.Meshes[0]
+			: new DrMesh { Name = asset.Key };
+		mesh.Tag = new DrMeshTag(asset);
+		var skinnedPartCount = 0;
 
 		foreach (var sourceMesh in asset.Meshes)
 		{
@@ -309,9 +291,8 @@ public sealed class SkinnedModelRenderer : IDisposable
 					Name = descriptor.Name,
 					DiffuseColor = descriptor.Color,
 					DiffuseTexture = texture,
-					Tag = descriptor,
+					Tag = new DrMaterialTag(descriptor),
 				};
-
 				var part = new DrMeshPart(
 					vertexBuffer,
 					indexBuffer,
@@ -324,25 +305,15 @@ public sealed class SkinnedModelRenderer : IDisposable
 				{
 					Material = material,
 					Skin = sourceMesh.Skin,
+					Tag = new DrMeshPartTag(skinnedPartCount++),
 				};
 
 				mesh.MeshParts.Add(part);
-				parts.Add(new ModelGpuPart(
-					parts.Count,
-					part,
-					descriptor,
-					texture));
 			}
 		}
 
-		var attachments = new List<AttachmentGpu>();
 		foreach (var source in asset.Attachments)
 		{
-			var attachmentMesh = new DrMesh
-			{
-				Name = $"{asset.Key}:{source.NodeName}",
-			};
-			var attachmentParts = new List<ModelGpuPart>();
 			var vertices = source.Mesh.Vertices.ToArray();
 			var indices = source.Mesh.Indices.ToArray();
 
@@ -360,6 +331,7 @@ public sealed class SkinnedModelRenderer : IDisposable
 				BufferUsage.None);
 			indexBuffer.SetData(indices);
 
+			var bone = asset.Model.FindBoneByName(source.NodeName) ?? asset.Model.Root;
 			foreach (var subMesh in source.Mesh.SubMeshes)
 			{
 				var descriptor = source.Materials.Get(subMesh.MaterialIndex);
@@ -371,7 +343,7 @@ public sealed class SkinnedModelRenderer : IDisposable
 					Name = descriptor.Name,
 					DiffuseColor = descriptor.Color,
 					DiffuseTexture = texture,
-					Tag = descriptor,
+					Tag = new DrMaterialTag(descriptor),
 				};
 				var part = new DrMeshPart(
 					vertexBuffer,
@@ -384,120 +356,90 @@ public sealed class SkinnedModelRenderer : IDisposable
 					subMesh.IndexOffset)
 				{
 					Material = material,
+					Tag = new DrMeshPartTag2(bone.Index),
 				};
 
-				attachmentMesh.MeshParts.Add(part);
-				attachmentParts.Add(new ModelGpuPart(
-					attachmentParts.Count,
-					part,
-					descriptor,
-					texture));
+				mesh.MeshParts.Add(part);
 			}
-
-			var bone = asset.Model.FindBoneByName(source.NodeName) ?? asset.Model.Root;
-			attachments.Add(new AttachmentGpu(
-				attachmentMesh,
-				bone.Index,
-				attachmentParts));
 		}
 
-		return new ModelGpu(asset, mesh, parts, attachments);
+		asset.Model.Tag = new DrModelTag(asset, skinnedPartCount);
+		return asset.Model;
 	}
 
-	private sealed class ModelGpu : IDisposable
+	private void CreateInstance(DrModel model, Matrix transform)
 	{
-		public ModelGpu(
-			GothicModelAsset asset,
-			DrMesh mesh,
-			IReadOnlyList<ModelGpuPart> parts,
-			IReadOnlyList<AttachmentGpu> attachments)
+		if (model.Tag is not DrModelTag info)
 		{
-			Asset = asset;
-			Mesh = mesh;
-			Parts = parts;
-			Attachments = attachments;
+			return;
 		}
 
-		public GothicModelAsset Asset { get; }
-
-		public DrMesh Mesh { get; }
-
-		public IReadOnlyList<ModelGpuPart> Parts { get; }
-
-		public IReadOnlyList<AttachmentGpu> Attachments { get; }
-
-		public void Dispose()
+		var instance = new DrModelInstance(model);
+		AnimationController? controller = null;
+		if (info.Asset.IdleClip is not null)
 		{
-			Mesh.Dispose();
-			foreach (var attachment in Attachments)
+			controller = new AnimationController(instance);
+			controller.StartClip(info.Asset.IdleClip, info.Asset.IdleClip.PlaybackFlags);
+			controller.Update(TimeSpan.Zero);
+		}
+
+		var mesh = model.Root.Mesh;
+		if (mesh is null)
+		{
+			return;
+		}
+
+		var transforms = new Matrix[info.SkinnedPartCount][];
+		foreach (var part in mesh.MeshParts)
+		{
+			if (part.Skin is not null && part.Tag is DrMeshPartTag partTag)
 			{
-				attachment.Dispose();
+				transforms[partTag.PartIndex] = new Matrix[part.Skin.Joints.Length];
 			}
+		}
+
+		instance.Tag = new DrModelInstanceTag(transform, controller, transforms);
+		_instances.Add(instance);
+	}
+
+	private void ApplyAttachmentMaterial(DrMeshPart part, Matrix world)
+	{
+		var descriptor = GetDescriptor(part);
+		var texture = part.Material?.DiffuseTexture;
+		var device = part.VertexBuffer.GraphicsDevice;
+		device.RasterizerState = descriptor.IsTwoSided
+			? RasterizerState.CullNone
+			: RasterizerState.CullCounterClockwise;
+		device.BlendState = BlendState.Opaque;
+
+		if (descriptor.AlphaMode == MaterialAlphaMode.Solid)
+		{
+			_basic.World = world;
+			_basic.View = _view;
+			_basic.Projection = _projection;
+			_basic.LightingEnabled = true;
+			_basic.TextureEnabled = texture is not null;
+			_basic.Texture = texture;
+			_basic.DiffuseColor = descriptor.Color.ToVector3();
+			_basic.Alpha = descriptor.AlphaWeight;
+			_basic.CurrentTechnique.Passes[0].Apply();
+		}
+		else
+		{
+			_alphaTest.World = world;
+			_alphaTest.View = _view;
+			_alphaTest.Projection = _projection;
+			_alphaTest.Texture = texture ?? _textures.Placeholder;
+			_alphaTest.DiffuseColor = descriptor.Color.ToVector3();
+			_alphaTest.Alpha = descriptor.AlphaWeight;
+			_alphaTest.CurrentTechnique.Passes[0].Apply();
 		}
 	}
 
-	private sealed class AttachmentGpu : IDisposable
+	private static MaterialDesc GetDescriptor(DrMeshPart part)
 	{
-		public AttachmentGpu(
-			DrMesh mesh,
-			int boneIndex,
-			IReadOnlyList<ModelGpuPart> parts)
-		{
-			Mesh = mesh;
-			BoneIndex = boneIndex;
-			Parts = parts;
-		}
-
-		public DrMesh Mesh { get; }
-
-		public int BoneIndex { get; }
-
-		public IReadOnlyList<ModelGpuPart> Parts { get; }
-
-		public void Dispose()
-		{
-			Mesh.Dispose();
-		}
-	}
-
-	private sealed record ModelGpuPart(
-		int Index,
-		DrMeshPart Part,
-		MaterialDesc Descriptor,
-		Texture2D? Texture);
-
-	private sealed class ModelInstance
-	{
-		public ModelInstance(ModelGpu gpu, Matrix transform)
-		{
-			Gpu = gpu;
-			Transform = transform;
-			Instance = new DrModelInstance(Gpu.Asset.Model);
-
-			var idle = Gpu.Asset.IdleClip;
-			if (idle is not null)
-			{
-				Controller = new AnimationController(Instance);
-				Controller.StartClip(idle, idle.PlaybackFlags);
-				Controller.Update(TimeSpan.Zero);
-			}
-
-			Transforms = new Matrix[Gpu.Parts.Count][];
-			for (var index = 0; index < Transforms.Length; index++)
-			{
-				var skin = Gpu.Parts[index].Part.Skin;
-				Transforms[index] = new Matrix[skin?.Joints.Length ?? 0];
-			}
-		}
-
-		public ModelGpu Gpu { get; }
-
-		public Matrix Transform { get; }
-
-		public DrModelInstance Instance { get; }
-
-		public AnimationController? Controller { get; }
-
-		public Matrix[][] Transforms { get; }
+		return part.Material?.Tag is DrMaterialTag tag
+			? tag.Descriptor
+			: MaterialDesc.Default;
 	}
 }

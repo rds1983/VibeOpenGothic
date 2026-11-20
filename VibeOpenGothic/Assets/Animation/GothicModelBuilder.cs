@@ -15,7 +15,8 @@ public static class GothicModelBuilder
 	public static GothicModelBuildResult Build(
 		string name,
 		SkinSkeleton skeleton,
-		AnimationLoadResult animations)
+		AnimationLoadResult animations,
+		DrMesh? rootMesh = null)
 	{
 		ArgumentException.ThrowIfNullOrWhiteSpace(name);
 		ArgumentNullException.ThrowIfNull(skeleton);
@@ -31,16 +32,6 @@ public static class GothicModelBuilder
 		warnings.AddRange(animations.Warnings);
 
 		var boneCount = skeleton.BoneCount;
-		var bones = new DrModelBone[boneCount];
-		for (var index = 0; index < boneCount; index++)
-		{
-			var bone = skeleton.Bones[index];
-			bones[index] = new DrModelBone(bone.Name, null)
-			{
-				DefaultPose = ToDefaultPose(bone.Local, bone.Name, warnings),
-			};
-		}
-
 		var parents = new int[boneCount];
 		for (var index = 0; index < boneCount; index++)
 		{
@@ -79,6 +70,17 @@ public static class GothicModelBuilder
 			}
 		}
 
+		var bones = new DrModelBone[boneCount];
+		for (var index = 0; index < boneCount; index++)
+		{
+			var bone = skeleton.Bones[index];
+			var mesh = roots.Count == 1 && roots[0] == index ? rootMesh : null;
+			bones[index] = new DrModelBone(bone.Name, mesh)
+			{
+				DefaultPose = ToDefaultPose(bone.Local, bone.Name, warnings),
+			};
+		}
+
 		for (var index = 0; index < boneCount; index++)
 		{
 			bones[index].Children = children[index].Select(child => bones[child]).ToArray();
@@ -91,7 +93,7 @@ public static class GothicModelBuilder
 		}
 		else
 		{
-			var syntheticRoot = new DrModelBone("<ROOT>", null);
+			var syntheticRoot = new DrModelBone("<ROOT>", rootMesh);
 			syntheticRoot.Children = roots.Select(index => bones[index]).ToArray();
 			root = syntheticRoot;
 			warnings.Add($"Skeleton has {roots.Count} roots; added a synthetic root bone.");

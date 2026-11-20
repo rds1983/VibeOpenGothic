@@ -279,7 +279,9 @@ call site, which is not enough for scripts, events or root motion.
   preview body.
 - The hierarchy becomes a `DrModel` with converted bones and `GothicAnimationClip`
   entries. `SkinnedMeshBuilder` bakes every soft mesh with the builder's
-  source-to-DrModel bone map.
+  source-to-DrModel bone map. The loader attaches one shared root `DrMesh` before
+  the `DrModel` is constructed, so `DrModel.Meshes` is populated; the renderer
+  fills it with skinned and static attachment parts after GPU upload.
 - `ModelSkinBuilder` builds one `DrSkin` per soft mesh, compacting the bones
   that actually carry weight. A mesh with more than 72 used bones keeps the 72
   with the largest total weight, renormalizes the surviving influences and logs a
@@ -294,7 +296,10 @@ call site, which is not enough for scripts, events or root motion.
   `DrModelInstance` and `AnimationController` per VOB. The default clip is
   `S_RUN`/`S_WALK` etc., then the first looping clip, then the first clip.
 - `--spawn-model <mds>` places a model in front of the start point for visual
-  diagnostics. It is developer-only and not part of normal gameplay.
+  diagnostics. Normal interactive runs default to `Orc.mds` while NPCs are still
+  script-spawned, so the skinned idle path is visible immediately; `--screenshot`
+  omits the default showcase and stays deterministic. The default is temporary
+  until T3.2.
 - `--check-world` now reports model VOB instances, unique models and model
   triangles. On G2 NotR `newworld.zen` these are 61 unique models / 883 model
   instances / 15,068 triangles; most are MOBSI doors, chests and static `.MDL`

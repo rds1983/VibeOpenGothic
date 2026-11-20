@@ -44,5 +44,9 @@ public sealed class WorldLoaderTests
 		Assert.True(size.X > 100_000f && size.Z > 100_000f, $"bounds={size}");
 		Assert.Equal(0, world.Stats.FailedVisualCount);
 		Assert.Equal(0, world.Stats.FailedModelCount);
+		Assert.All(
+			world.Models.Values.Where(
+				model => model.Meshes.Count > 0 || model.Attachments.Count > 0),
+			model => Assert.NotEmpty(model.Model.Meshes));
 	}
 }

@@ -477,6 +477,8 @@ A task is done only when:
 - Texture frame animation (`loadFrames`) for animated materials.
 - On-screen world loading/progress screen (T1.6 currently reports progress and
   timings through logs only).
+- Remove the default Orc idle showcase from normal runs once script startup
+  spawns real NPCs (T3.2).
 - Full GPU mip-chain upload and sampler/anisotropic policy (T1.5 uploads the
   top mip only).
 - World lightmap UV projection and `DualTextureEffect` (T1.6 renders solid/alpha

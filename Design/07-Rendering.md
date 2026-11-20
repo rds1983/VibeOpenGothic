@@ -78,7 +78,16 @@ and camera are static, so repeated runs are byte-identical.
 
 - `SkinnedModelRenderer` uploads one shared `DrMesh` per `GothicModelAsset` and
   draws every `ModelVobInstance` with a per-instance `DrModelInstance` and
-  `AnimationController`.
+  `AnimationController`. The CPU loader attaches an empty root `DrMesh` before
+  constructing `DrModel`, so `DrModel.Meshes` is populated; GPU upload fills that
+  mesh with skinned and attachment parts.
+- Runtime state uses DigitalRiseModel objects directly, with typed tag payloads in
+  `Rendering/DigitalRiseModelTags.cs`: `DrModelTag` stores the asset and
+  skinned-part count (the shared mesh is reached through `DrModel.Meshes` /
+  `DrModel.Root.Mesh`), `DrMeshTag` the asset back-reference, `DrMeshPartTag` the
+  skinned-part index, `DrMeshPartTag2` an attachment's bone index,
+  `DrModelInstanceTag` the transform/animation/matrix state, and `DrMaterialTag`
+  the `MaterialDesc`. There are no parallel GPU model or instance wrapper classes.
 - Soft meshes use `SkinnedEffect` with `WeightsPerVertex = 4` and per-mesh `DrSkin`
   joints; static MDM attachments use `BasicEffect`/`AlphaTestEffect` and follow
   their named bone.
@@ -86,8 +95,9 @@ and camera are static, so repeated runs are byte-identical.
   `DrModelInstance.GetBoneGlobalTransform` without adding GPU meshes to
   `DrModel.Meshes`, so shared CPU models stay immutable after upload.
 - The default idle clip is chosen from `S_RUN`/`S_WALK`/weapon variants, then the
-  first looping clip. `--spawn-model <mds>` places a developer preview model in
-  front of the start point for animation screenshots.
+  first looping clip. Normal interactive runs spawn an `Orc.mds` idle showcase in
+  front of the start point; `--spawn-model <mds>` overrides it and `--screenshot`
+  omits it so the deterministic screenshot remains unchanged.
 - `SkinnedEffect` has no alpha-test variant; alpha model materials currently use
   alpha blending, not cutout. Hairs and alpha fringes may sort differently until
   a custom skinned effect lands in the visual-parity pass.

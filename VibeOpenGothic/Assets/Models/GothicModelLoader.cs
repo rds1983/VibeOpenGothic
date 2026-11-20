@@ -160,10 +160,15 @@ public static class GothicModelLoader
 		var skeleton = SkinSkeletonBuilder.Build(
 			nodes,
 			new Vector3(root.X, root.Y, root.Z));
+		var rootMesh = modelMesh is not null &&
+			(modelMesh.MeshCount > 0 || modelMesh.AttachmentCount > 0)
+			? new DrMesh { Name = sourcePath }
+			: null;
 		var build = GothicModelBuilder.Build(
 			Path.GetFileNameWithoutExtension(sourcePath),
 			skeleton,
-			animations);
+			animations,
+			rootMesh);
 		warnings.AddRange(build.Warnings);
 
 		var meshes = new List<GothicModelMesh>();

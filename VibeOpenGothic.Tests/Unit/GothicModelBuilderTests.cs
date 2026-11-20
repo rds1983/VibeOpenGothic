@@ -30,6 +30,26 @@ public sealed class GothicModelBuilderTests
 	}
 
 	[Fact]
+	public void Build_AttachesRootMeshToModel()
+	{
+		var skeleton = Skeleton(
+			new SkinHierarchyNode("root", -1, Matrix.Identity),
+			new SkinHierarchyNode("child", 0, Matrix.CreateTranslation(1, 0, 0)));
+		var mesh = new DrMesh { Name = "body" };
+
+		var result = GothicModelBuilder.Build(
+			"test",
+			skeleton,
+			EmptyAnimations(),
+			mesh);
+		using var model = result.Model;
+
+		Assert.Same(mesh, model.Root.Mesh);
+		Assert.Contains(mesh, model.Meshes);
+		Assert.Single(model.Meshes);
+	}
+
+	[Fact]
 	public void Build_SetsDefaultPoseAndInverseBind()
 	{
 		var skeleton = Skeleton(

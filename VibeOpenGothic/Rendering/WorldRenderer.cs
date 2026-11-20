@@ -141,7 +141,9 @@ public sealed class WorldRenderer : IDisposable
 		{
 			foreach (var part in mesh.MeshParts)
 			{
-				var descriptor = part.Material?.Tag as MaterialDesc ?? MaterialDesc.Default;
+				var descriptor = part.Material?.Tag is DrMaterialTag tag
+					? tag.Descriptor
+					: MaterialDesc.Default;
 				ApplyMaterial(descriptor, part.Material, transform);
 				_device.SetVertexBuffer(part.VertexBuffer);
 				_device.Indices = part.IndexBuffer;
@@ -236,7 +238,7 @@ public sealed class WorldRenderer : IDisposable
 				Name = descriptor.Name,
 				DiffuseColor = descriptor.Color,
 				DiffuseTexture = textures.Get(descriptor.Texture),
-				Tag = descriptor,
+				Tag = new DrMaterialTag(descriptor),
 			};
 
 			var part = new DrMeshPart(

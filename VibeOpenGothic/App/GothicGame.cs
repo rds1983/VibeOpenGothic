@@ -19,6 +19,7 @@ public sealed class GothicGame : Game
 {
 	private const int ScreenshotWidth = 1280;
 	private const int ScreenshotHeight = 720;
+	private const string DefaultShowcaseModel = "Orc.mds";
 
 	private static readonly TimeSpan LogicStep = TimeSpan.FromSeconds(1.0 / 60.0);
 
@@ -107,12 +108,21 @@ public sealed class GothicGame : Game
 		var gameVersion = _options.Install.Version.IsGothic1
 			? GameVersion.Gothic1
 			: GameVersion.Gothic2;
+		var spawnModel = _options.CommandLine.SpawnModel;
+		if (string.IsNullOrWhiteSpace(spawnModel) &&
+			string.IsNullOrWhiteSpace(_options.CommandLine.ScreenshotPath))
+		{
+			// TODO(T3.2): Remove once script startup spawns real NPCs.
+			spawnModel = DefaultShowcaseModel;
+			Log.Info("World", $"Showing default skinned-model showcase '{spawnModel}'.");
+		}
+
 		var world = WorldLoader.Load(
 			_options.Vfs,
 			worldName,
 			gameVersion,
 			message => Log.Info("World", message),
-			_options.CommandLine.SpawnModel);
+			spawnModel);
 		_renderer = new GothicRenderer(GraphicsDevice, world);
 		_ui = new UiRoot(this);
 	}
