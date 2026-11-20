@@ -1,3 +1,4 @@
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using VibeOpenGothic.Assets.Textures;
 
@@ -12,6 +13,7 @@ public sealed class GpuTextureCache : IDisposable
 	private readonly GraphicsDevice _device;
 	private readonly Dictionary<string, Texture2D> _cache = new(StringComparer.OrdinalIgnoreCase);
 	private Texture2D? _placeholder;
+	private Texture2D? _white;
 	private bool _disposed;
 
 	public GpuTextureCache(GraphicsDevice device)
@@ -47,6 +49,21 @@ public sealed class GpuTextureCache : IDisposable
 		}
 	}
 
+	public Texture2D White
+	{
+		get
+		{
+			ObjectDisposedException.ThrowIf(_disposed, this);
+			if (_white is null)
+			{
+				_white = new Texture2D(_device, 1, 1, false, SurfaceFormat.Color);
+				_white.SetData(new[] { Color.White });
+			}
+
+			return _white;
+		}
+	}
+
 	public void Dispose()
 	{
 		if (_disposed)
@@ -64,6 +81,8 @@ public sealed class GpuTextureCache : IDisposable
 		_cache.Clear();
 		_placeholder?.Dispose();
 		_placeholder = null;
+		_white?.Dispose();
+		_white = null;
 	}
 
 	private Texture2D Upload(TextureData data)

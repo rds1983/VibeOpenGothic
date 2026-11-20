@@ -1,4 +1,5 @@
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics.PackedVector;
 using VibeOpenGothic.Assets.Meshes;
 using VibeOpenGothic.Core;
 
@@ -13,7 +14,10 @@ public static class SkinnedMeshBuilder
 {
 	private const float DegenerateAreaSquared = 1e-10f;
 
-	public static SkinnedMeshResult Build(SkinnedMeshSource source, string name)
+	public static SkinnedMeshResult Build(
+		SkinnedMeshSource source,
+		string name,
+		IReadOnlyList<int>? sourceToDrBone = null)
 	{
 		ArgumentNullException.ThrowIfNull(source);
 		ArgumentException.ThrowIfNullOrWhiteSpace(name);
@@ -204,13 +208,41 @@ public static class SkinnedMeshBuilder
 				CoordinateSystem.ToEngineNormal(feature.Normal),
 				feature.TexCoord,
 				bakedVertex.Weights,
-				bakedVertex.BoneIndices);
+				RemapBoneIndices(bakedVertex.BoneIndices, sourceToDrBone));
 
 			var index = vertices.Count;
 			vertices.Add(vertex);
 			vertexMap[key] = index;
 			return index;
 		}
+	}
+
+	private static Byte4 RemapBoneIndices(
+		Byte4 indices,
+		IReadOnlyList<int>? sourceToDrBone)
+	{
+		if (sourceToDrBone is null)
+		{
+			return indices;
+		}
+
+		var packed = indices.PackedValue;
+		return new Byte4(
+			Remap((byte)(packed & 0xFF), sourceToDrBone),
+			Remap((byte)((packed >> 8) & 0xFF), sourceToDrBone),
+			Remap((byte)((packed >> 16) & 0xFF), sourceToDrBone),
+			Remap((byte)((packed >> 24) & 0xFF), sourceToDrBone));
+	}
+
+	private static byte Remap(byte sourceIndex, IReadOnlyList<int> sourceToDrBone)
+	{
+		if (sourceIndex >= sourceToDrBone.Count)
+		{
+			return 0;
+		}
+
+		var mapped = sourceToDrBone[sourceIndex];
+		return (uint)mapped > byte.MaxValue ? (byte)0 : (byte)mapped;
 	}
 
 	private static BoundingBox ComputeBounds(List<SkinnedVertex> vertices)

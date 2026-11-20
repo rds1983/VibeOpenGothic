@@ -111,7 +111,8 @@ public sealed class GothicGame : Game
 			_options.Vfs,
 			worldName,
 			gameVersion,
-			message => Log.Info("World", message));
+			message => Log.Info("World", message),
+			_options.CommandLine.SpawnModel);
 		_renderer = new GothicRenderer(GraphicsDevice, world);
 		_ui = new UiRoot(this);
 	}

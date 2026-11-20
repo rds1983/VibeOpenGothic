@@ -1,6 +1,7 @@
 using Microsoft.Xna.Framework;
 using VibeOpenGothic.Assets.Materials;
 using VibeOpenGothic.Assets.Meshes;
+using VibeOpenGothic.Assets.Models;
 
 namespace VibeOpenGothic.World;
 
@@ -16,6 +17,8 @@ public sealed class WorldAsset
 		MaterialSet materials,
 		IReadOnlyList<StaticVobInstance> staticVobs,
 		IReadOnlyDictionary<string, StaticMeshSource> staticMeshes,
+		IReadOnlyList<ModelVobInstance> modelVobs,
+		IReadOnlyDictionary<string, GothicModelAsset> models,
 		IReadOnlyList<WorldWaypoint> waypoints,
 		IReadOnlyList<string> missingTextures,
 		Vector3? startPosition,
@@ -28,6 +31,8 @@ public sealed class WorldAsset
 		ArgumentNullException.ThrowIfNull(materials);
 		ArgumentNullException.ThrowIfNull(staticVobs);
 		ArgumentNullException.ThrowIfNull(staticMeshes);
+		ArgumentNullException.ThrowIfNull(modelVobs);
+		ArgumentNullException.ThrowIfNull(models);
 		ArgumentNullException.ThrowIfNull(waypoints);
 		ArgumentNullException.ThrowIfNull(missingTextures);
 
@@ -36,6 +41,8 @@ public sealed class WorldAsset
 		Materials = materials;
 		StaticVobs = staticVobs;
 		StaticMeshes = staticMeshes;
+		ModelVobs = modelVobs;
+		Models = models;
 		Waypoints = waypoints;
 		MissingTextures = missingTextures;
 		StartPosition = startPosition;
@@ -53,6 +60,10 @@ public sealed class WorldAsset
 	public IReadOnlyList<StaticVobInstance> StaticVobs { get; }
 
 	public IReadOnlyDictionary<string, StaticMeshSource> StaticMeshes { get; }
+
+	public IReadOnlyList<ModelVobInstance> ModelVobs { get; }
+
+	public IReadOnlyDictionary<string, GothicModelAsset> Models { get; }
 
 	public IReadOnlyList<WorldWaypoint> Waypoints { get; }
 

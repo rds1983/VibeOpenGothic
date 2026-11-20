@@ -40,12 +40,24 @@ The first pass implements stages 1, 2 (visual only) and 5:
   T1.9/T2.x/T3.x.
 - `--check-world` reports 23 roots / 23,288 VOBs, 11,546 static instances from
   312 unique meshes, 2,959 waypoints, 473k world triangles and a start point on
-  G2 NotR. The frame submits about 2.58M triangles and 21k draw calls once all
-  static instances are drawn. The CPU load takes about 1.8 s; GPU upload about
-  0.1 s for the world and 0.2 s for static meshes on the development machine.
+  G2 NotR. The frame submits about 2.73M triangles and 23k draw calls once all
+  static and model instances are drawn. The CPU load takes about 3.5 s; GPU
+  upload about 0.1 s for the world, 0.2 s for static meshes and 0.3 s for models
+  on the development machine.
 - Lightmaps are present in the world data but not applied yet: the current
   vertex format has no lightmap UV, so `DualTextureEffect` waits for a dedicated
   lightmap-projection task.
+
+### T1.7 model VOBs
+
+Model-typed VOB visuals are loaded as MDS models (and `.ASC` visuals through
+their compiled `.MDL` bundle). The first pass loads the model's default soft
+mesh, builds per-mesh skins and animates model VOBs with their default idle
+clip. Static MDM attachments are rendered by node name. On G2 NotR `newworld.zen`
+this produces 883 model instances from 61 unique models after the preview option
+is off; most are MOBSI props with `S_S0` and static `.MDL` furniture. NPC VOBs
+are not placed in the ZEN; scripts spawn them later, so `--spawn-model <mds>` is
+the developer preview for an NPC/creature against the real world.
 
 ## Coordinate spaces
 

@@ -88,6 +88,7 @@ Rules:
 | Mesh conversion | Triangles/quads/fans, UV seams, material/lightmap submesh grouping, degenerate/invalid inputs, bounds, `--check-meshes` real-data run |
 | Textures/materials | TEX RGBA/mip decoding, `-C.TEX` resolution, cache/placeholder behavior, alpha-mode mapping, lightmap/two-sided flags |
 | Animation | Frame-to-time conversion, loop/transition timing, quaternion sign, alias/channel remapping, `--check-animations` real-data pose run, event firing |
+| Model skinning/rendering | Per-mesh joint compaction, >72-bone remap/warning, source-to-DrModel index remap, attachment binding, `--check-world` model counts, `--spawn-model` screenshot at two timestamps |
 | World loading | VOB transform composition, startpoint/waypoint conversion, mesh/material counts and bounds, `--check-world` real-data run, `newworld.zen` render smoke test |
 | Physics | Drop/rest, slopes, steps, wall slide, moving platforms, ray masks |
 | Scripts | External arity, marshaling, dialog flow, quest state, save/load of symbols |

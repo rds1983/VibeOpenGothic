@@ -15,6 +15,7 @@ public static class CommandLineParser
 		string? saveToLoad = null;
 		string? dataDirectory = null;
 		string? screenshotPath = null;
+		string? spawnModel = null;
 		var showHelp = false;
 		var showVersion = false;
 		var probe = false;
@@ -117,6 +118,13 @@ public static class CommandLineParser
 					}
 
 					break;
+				case "--spawn-model":
+					if (TryTakeValue(args, ref index, argument, errors, out var spawn))
+					{
+						spawnModel = spawn;
+					}
+
+					break;
 				default:
 					if (argument.StartsWith("-game:", StringComparison.OrdinalIgnoreCase))
 					{
@@ -156,6 +164,7 @@ public static class CommandLineParser
 			SaveToLoad = saveToLoad,
 			DataDirectory = dataDirectory,
 			ScreenshotPath = screenshotPath,
+			SpawnModel = spawnModel,
 			ShowHelp = showHelp,
 			ShowVersion = showVersion,
 			Probe = probe,

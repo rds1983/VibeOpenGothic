@@ -17,6 +17,7 @@ public sealed class CommandLineParserTests
 		Assert.Null(result.Options.SaveToLoad);
 		Assert.Null(result.Options.DataDirectory);
 		Assert.Null(result.Options.ScreenshotPath);
+		Assert.Null(result.Options.SpawnModel);
 		Assert.False(result.Options.ShowHelp);
 		Assert.False(result.Options.ShowVersion);
 		Assert.False(result.Options.Probe);
@@ -93,6 +94,15 @@ public sealed class CommandLineParserTests
 		var result = CommandLineParser.Parse(new[] { "--screenshot", "shots/test.png" });
 
 		Assert.Equal("shots/test.png", result.Options.ScreenshotPath);
+		Assert.False(result.HasErrors);
+	}
+
+	[Fact]
+	public void Parse_SpawnModel_IsRecognized()
+	{
+		var result = CommandLineParser.Parse(new[] { "--spawn-model", "HumanS.mds" });
+
+		Assert.Equal("HumanS.mds", result.Options.SpawnModel);
 		Assert.False(result.HasErrors);
 	}
 
@@ -212,6 +222,7 @@ public sealed class CommandLineParserTests
 	[InlineData("-save")]
 	[InlineData("--data-dir")]
 	[InlineData("--screenshot")]
+	[InlineData("--spawn-model")]
 	public void Parse_MissingValue_AddsError(string argument)
 	{
 		var result = CommandLineParser.Parse(new[] { argument });

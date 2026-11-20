@@ -74,6 +74,25 @@ and camera are static, so repeated runs are byte-identical.
   currently lists `F3 - Toggle debug overlay`; future controls go there instead
   of the debug overlay.
 
+### Skinned model VOBs (T1.7)
+
+- `SkinnedModelRenderer` uploads one shared `DrMesh` per `GothicModelAsset` and
+  draws every `ModelVobInstance` with a per-instance `DrModelInstance` and
+  `AnimationController`.
+- Soft meshes use `SkinnedEffect` with `WeightsPerVertex = 4` and per-mesh `DrSkin`
+  joints; static MDM attachments use `BasicEffect`/`AlphaTestEffect` and follow
+  their named bone.
+- Bone matrices are computed from `DrSkinJoint.InverseBindTransform` and
+  `DrModelInstance.GetBoneGlobalTransform` without adding GPU meshes to
+  `DrModel.Meshes`, so shared CPU models stay immutable after upload.
+- The default idle clip is chosen from `S_RUN`/`S_WALK`/weapon variants, then the
+  first looping clip. `--spawn-model <mds>` places a developer preview model in
+  front of the start point for animation screenshots.
+- `SkinnedEffect` has no alpha-test variant; alpha model materials currently use
+  alpha blending, not cutout. Hairs and alpha fringes may sort differently until
+  a custom skinned effect lands in the visual-parity pass.
+- The overlay counters include skinned model draw calls and triangles.
+
 ## Platform and device
 
 - MonoGame DesktopGL, `GraphicsProfile.HiDef`.

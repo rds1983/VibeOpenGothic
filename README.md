@@ -4,7 +4,7 @@ C# reimplementation of **Gothic II: Night of the Raven**, ported from
 [OpenGothic](https://github.com/Try/OpenGothic). It runs the original game data;
 no game assets are bundled.
 
-**Status:** pre-alpha (data loading and static world rendering). The roadmap is in [TASKS.md](TASKS.md).
+**Status:** pre-alpha (data loading, static world and model VOB rendering). The roadmap is in [TASKS.md](TASKS.md).
 
 Key decisions:
 
@@ -46,11 +46,13 @@ dotnet run --project VibeOpenGothic -- -g "C:\Gothic II"
 ```
 
 The current build loads and renders the default Gothic II world from a free
-camera. Escape or Alt+F4 exits; `F3` toggles a debug overlay with FPS, draw calls
-and submitted triangles, and a bottom-left HUD lists the current controls.
-Gothic II is auto-detected from settings, `VOG_GOTHIC_PATH`, common paths and
-Steam library folders; `-g <path>` overrides detection. Settings and `log.txt`
-are written to `%LOCALAPPDATA%\VibeOpenGothic` (override with `--data-dir`).
+camera, including static VOB props and model VOBs. Escape or Alt+F4 exits; `F3`
+toggles a debug overlay with FPS, draw calls and submitted triangles, and a
+bottom-left HUD lists the current controls. Use `--spawn-model <mds>` to place a
+developer preview model in front of the start point. Gothic II is auto-detected
+from settings, `VOG_GOTHIC_PATH`, common paths and Steam library folders;
+`-g <path>` overrides detection. Settings and `log.txt` are written to
+`%LOCALAPPDATA%\VibeOpenGothic` (override with `--data-dir`).
 
 ## Repository layout
 

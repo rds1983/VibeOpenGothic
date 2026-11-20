@@ -2,6 +2,7 @@ using System.Diagnostics;
 using Microsoft.Xna.Framework;
 using VibeOpenGothic.Assets.Materials;
 using VibeOpenGothic.Assets.Meshes;
+using VibeOpenGothic.Assets.Models;
 using VibeOpenGothic.Assets.Textures;
 using VibeOpenGothic.Core;
 using VibeOpenGothic.Data.Vfs;
@@ -21,7 +22,8 @@ public static class WorldLoader
 		IGameVfs vfs,
 		string worldName,
 		GameVersion gameVersion,
-		Action<string>? progress = null)
+		Action<string>? progress = null,
+		string? spawnModel = null)
 	{
 		ArgumentNullException.ThrowIfNull(vfs);
 		ArgumentException.ThrowIfNullOrWhiteSpace(worldName);
@@ -59,10 +61,15 @@ public static class WorldLoader
 		var vobStart = Stopwatch.StartNew();
 		var staticVobs = new List<StaticVobInstance>();
 		var staticMeshes = new Dictionary<string, StaticMeshSource>(StringComparer.OrdinalIgnoreCase);
+		var modelVobs = new List<ModelVobInstance>();
+		var models = new Dictionary<string, GothicModelAsset>(StringComparer.OrdinalIgnoreCase);
+		var modelKeysByVisual = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+		var failedModelKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 		var failedVisualKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 		var vobCount = 0;
 		var skippedVisuals = 0;
 		var failedVisuals = 0;
+		var failedModels = 0;
 		Vector3? startPosition = null;
 		var startDirection = -Vector3.UnitZ;
 		var stack = new Stack<(IVirtualObject Vob, Matrix Parent)>();
@@ -90,7 +97,40 @@ public static class WorldLoader
 			var visual = vob.Visual;
 			if (vob.ShowVisual && visual is not null)
 			{
-				if (visual.Type is VisualType.MultiResolutionMesh or VisualType.Mesh)
+				if (visual.Type == VisualType.Model)
+				{
+					var modelKey = visual.Name;
+					if (!modelKeysByVisual.ContainsKey(modelKey) &&
+						!failedModelKeys.Contains(modelKey))
+					{
+						try
+						{
+							var model = GothicModelLoader.Load(
+								vfs,
+								modelKey,
+								textureCache,
+								message => progress($"Model: {message}"));
+							models[model.Key] = model;
+							modelKeysByVisual[modelKey] = model.Key;
+						}
+						catch (Exception exception)
+						{
+							failedModels++;
+							failedModelKeys.Add(modelKey);
+							if (failedModels <= 20)
+							{
+								progress($"Model visual '{modelKey}' failed: {exception.Message}");
+							}
+						}
+					}
+
+					if (modelKeysByVisual.TryGetValue(modelKey, out var loadedModelKey) &&
+						models.ContainsKey(loadedModelKey))
+					{
+						modelVobs.Add(new ModelVobInstance(loadedModelKey, transform));
+					}
+				}
+				else if (visual.Type is VisualType.MultiResolutionMesh or VisualType.Mesh)
 				{
 					var key = visual.Type + "|" + visual.Name;
 					if (!staticMeshes.ContainsKey(key) && !failedVisualKeys.Contains(key))
@@ -136,7 +176,8 @@ public static class WorldLoader
 		var vobMs = vobStart.Elapsed.TotalMilliseconds;
 		progress(
 			$"VOBs: {vobCount} objects, {staticVobs.Count} static instances, " +
-			$"{staticMeshes.Count} unique static meshes in {vobMs:0} ms");
+			$"{staticMeshes.Count} unique static meshes, {modelVobs.Count} model instances, " +
+			$"{models.Count} unique models in {vobMs:0} ms");
 
 		var waypointStart = Stopwatch.StartNew();
 		var waypoints = ConvertWaypoints(world);
@@ -155,12 +196,42 @@ public static class WorldLoader
 			startDirection = -Vector3.UnitZ;
 		}
 
+		if (!string.IsNullOrWhiteSpace(spawnModel))
+		{
+			try
+			{
+				var model = GothicModelLoader.Load(
+					vfs,
+					spawnModel,
+					textureCache,
+					message => progress($"Preview model: {message}"),
+					allowDefaultBodyMesh: true);
+				models[model.Key] = model;
+
+				var position = startPosition.Value + startDirection * 350f;
+				var yaw = MathF.Atan2(startDirection.X, startDirection.Z);
+				var transform =
+					Matrix.CreateRotationY(yaw) *
+					Matrix.CreateTranslation(position);
+				modelVobs.Add(new ModelVobInstance(model.Key, transform));
+				progress($"Preview model '{spawnModel}' placed at {position}.");
+			}
+			catch (Exception exception)
+			{
+				failedModels++;
+				progress($"Preview model '{spawnModel}' failed: {exception.Message}");
+			}
+		}
+
 		total.Stop();
 		var stats = new WorldLoadStats(
 			roots.Count,
 			vobCount,
 			staticVobs.Count,
 			staticMeshes.Count,
+			modelVobs.Count,
+			models.Count,
+			failedModels,
 			skippedVisuals,
 			failedVisuals,
 			textureCache.MissingTextures.Count,
@@ -186,6 +257,8 @@ public static class WorldLoader
 			materials,
 			staticVobs,
 			staticMeshes,
+			modelVobs,
+			models,
 			waypoints,
 			textureCache.MissingTextures.ToArray(),
 			startPosition,

@@ -36,7 +36,23 @@ public static class WorldCheckTool
 				$"{world.Mesh.SubMeshes.Count} submeshes, {world.Materials.Materials.Count} materials");
 			output(
 				$"VOBs: {world.Stats.RootObjectCount} roots, {world.Stats.VobCount} total, " +
-				$"{world.Stats.StaticVobCount} static instances, {world.Stats.UniqueStaticMeshCount} unique meshes");
+				$"{world.Stats.StaticVobCount} static instances, {world.Stats.UniqueStaticMeshCount} unique meshes, " +
+				$"{world.Stats.ModelVobCount} model instances, {world.Stats.UniqueModelCount} unique models");
+			var modelTriangles = world.Models.Values.Sum(model => (long)model.TriangleCount);
+			output(
+				$"Models: {world.Models.Count} loaded, {world.Stats.FailedModelCount} failed, " +
+				$"{modelTriangles} triangles");
+			var modelWarnings = world.Models.Values
+				.SelectMany(model => model.Warnings)
+				.ToList();
+			if (modelWarnings.Count > 0)
+			{
+				output($"Model warnings: {modelWarnings.Count}");
+				foreach (var warning in modelWarnings.Take(10))
+				{
+					output($"  {warning}");
+				}
+			}
 			output(
 				$"Waypoints: {world.Waypoints.Count}; start: {start}; direction: {world.StartDirection}");
 			output(

@@ -35,11 +35,14 @@ public sealed class WorldLoaderTests
 		Assert.True(world.Mesh.TriangleCount > 200_000, $"triangles={world.Mesh.TriangleCount}");
 		Assert.True(world.Mesh.VertexCount > 300_000, $"vertices={world.Mesh.VertexCount}");
 		Assert.True(world.StaticVobs.Count > 5_000, $"static vobs={world.StaticVobs.Count}");
+		Assert.True(world.ModelVobs.Count > 0, $"model vobs={world.ModelVobs.Count}");
+		Assert.True(world.Models.Count > 0, $"models={world.Models.Count}");
 		Assert.True(world.Waypoints.Count > 1_000, $"waypoints={world.Waypoints.Count}");
 		Assert.NotNull(world.StartPosition);
 
 		var size = world.Bounds.Max - world.Bounds.Min;
 		Assert.True(size.X > 100_000f && size.Z > 100_000f, $"bounds={size}");
 		Assert.Equal(0, world.Stats.FailedVisualCount);
+		Assert.Equal(0, world.Stats.FailedModelCount);
 	}
 }

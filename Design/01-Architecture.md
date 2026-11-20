@@ -171,8 +171,9 @@ VFS bytes -> ZenKit parse -> AssetConverter -> CPU asset (immutable) -> cache
   and poses each clip at frame zero and its midpoint. `--check-world` loads a ZEN
   world without GPU upload and reports mesh/VOB/waypoint counts, bounds, start
   point and timings. `--screenshot <path>` renders the world to a deterministic
-  1280x720 PNG. `--dump-data` extracts converted meshes/textures for debugging
-  (developer-only output, never committed).
+  1280x720 PNG. `--spawn-model <mds>` places a developer preview model in front
+  of the start point for skinned-model checks. `--dump-data` extracts converted
+  meshes/textures for debugging (developer-only output, never committed).
 - Performance counters: frame time, update time, loaded asset count, draw calls,
   triangle count, GC allocations per frame. The window title shows FPS and frame
   time; `F3` toggles a Myra debug overlay with FPS, draw calls and submitted

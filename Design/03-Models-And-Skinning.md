@@ -268,6 +268,39 @@ clip metadata in `GothicAnimationClip : AnimationClip` and use the MAN FPS;
 OpenGothicSharp stores only plain `AnimationClip`s and passes loop flags at the
 call site, which is not enough for scripts, events or root motion.
 
+### Model VOB runtime (T1.7)
+
+`GothicModelLoader` turns an MDS visual into a `GothicModelAsset`:
+
+- The default skeleton mesh is resolved as in OpenGothic: `<skeleton stem>.MDM`
+  with a fallback to the first MDS mesh. If the MDS disables its skeleton mesh
+  (normal for `HUMANS.MDS`, `Orc.mds` and other NPC models), the script must set
+  a body mesh separately. `--spawn-model` uses the first mesh as a developer
+  preview body.
+- The hierarchy becomes a `DrModel` with converted bones and `GothicAnimationClip`
+  entries. `SkinnedMeshBuilder` bakes every soft mesh with the builder's
+  source-to-DrModel bone map.
+- `ModelSkinBuilder` builds one `DrSkin` per soft mesh, compacting the bones
+  that actually carry weight. A mesh with more than 72 used bones keeps the 72
+  with the largest total weight, renormalizes the surviving influences and logs a
+  warning; it never crashes or exceeds `SkinnedEffect`'s limit.
+- Static `.MDM` attachments are baked as ordinary meshes and bound to their
+  named hierarchy node. They are drawn with `BasicEffect`/`AlphaTestEffect`
+  under the animated node transform. Inventory-driven weapon/armor slots and
+  `.MMB` morph heads are still supplied/deferred; `HumanS.mds` previews therefore
+  show the body without a head, while complete creatures such as `Orc.mds` are
+  fully visible.
+- `SkinnedModelRenderer` shares one GPU `DrMesh` per model but creates a
+  `DrModelInstance` and `AnimationController` per VOB. The default clip is
+  `S_RUN`/`S_WALK` etc., then the first looping clip, then the first clip.
+- `--spawn-model <mds>` places a model in front of the start point for visual
+  diagnostics. It is developer-only and not part of normal gameplay.
+- `--check-world` now reports model VOB instances, unique models and model
+  triangles. On G2 NotR `newworld.zen` these are 61 unique models / 883 model
+  instances / 15,068 triangles; most are MOBSI doors, chests and static `.MDL`
+  props. Placed NPC VOBs do not exist in the ZEN because NPCs are spawned by
+  scripts in T3.2.
+
 ### Clips
 
 Each MDS animation has a MAN file named `<mds stem>-<animation name>.MAN`:
@@ -366,6 +399,9 @@ Unit tests (no GPU required):
    without hanging.
 12. `SkinBone.Local` is exposed for `DrModelBone.DefaultPose` and matches the
     bind composition.
+13. A mesh using more than 72 bones keeps the strongest 72 in its `DrSkin`,
+    remaps all indices below 72, renormalizes weights and reports the count.
+14. Source-to-DrModel bone remapping is applied when skinned vertices are built.
 
 Diagnostics:
 
@@ -401,3 +437,7 @@ Visual:
   silhouette matches the original data, and nothing is inside-out.
 - Screenshot an NPC in a T-pose/idle at a fixed camera, before and after
   conversion. The silhouettes must match within anti-aliasing tolerance.
+- 2026-11-21: `--spawn-model Orc.mds` and `HumanS.mds` render complete default
+  bodies against `newworld.zen`; the Orc screenshot pair at two timestamps shows
+  the idle animation advancing. Placed NPC VOBs do not exist in the ZEN, so the
+  preview option is the visual acceptance path until script spawning (T3.2).

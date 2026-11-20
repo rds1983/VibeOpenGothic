@@ -16,6 +16,7 @@ public sealed class GothicRenderer : IDisposable
 	private readonly GraphicsDevice _device;
 	private readonly GpuTextureCache _textures;
 	private readonly WorldRenderer _world;
+	private readonly SkinnedModelRenderer _models;
 	private bool _disposed;
 
 	public GothicRenderer(GraphicsDevice device, WorldAsset world)
@@ -25,6 +26,11 @@ public sealed class GothicRenderer : IDisposable
 
 		_textures = new GpuTextureCache(device);
 		_world = new WorldRenderer(
+			device,
+			_textures,
+			world,
+			message => Log.Info("World", message));
+		_models = new SkinnedModelRenderer(
 			device,
 			_textures,
 			world,
@@ -52,9 +58,9 @@ public sealed class GothicRenderer : IDisposable
 
 	public GothicCamera Camera { get; }
 
-	public int LastDrawCalls => _world.LastDrawCalls;
+	public int LastDrawCalls => _world.LastDrawCalls + _models.LastDrawCalls;
 
-	public int LastDrawnPolygons => _world.LastDrawnPolygons;
+	public int LastDrawnPolygons => _world.LastDrawnPolygons + _models.LastDrawnPolygons;
 
 	public void Draw(GameTime gameTime)
 	{
@@ -70,6 +76,8 @@ public sealed class GothicRenderer : IDisposable
 		Camera.SetAspectRatio(_device.Viewport.AspectRatio);
 		_world.SetCamera(Camera.View, Camera.Projection);
 		_world.Draw(gameTime);
+		_models.SetCamera(Camera.View, Camera.Projection);
+		_models.Draw(gameTime);
 	}
 
 	public void Dispose()
@@ -81,6 +89,7 @@ public sealed class GothicRenderer : IDisposable
 
 		_disposed = true;
 		_world.Dispose();
+		_models.Dispose();
 		_textures.Dispose();
 	}
 }

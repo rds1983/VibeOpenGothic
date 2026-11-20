@@ -14,6 +14,8 @@ public sealed record CommandLineOptions
 
 	public string? ScreenshotPath { get; init; }
 
+	public string? SpawnModel { get; init; }
+
 	public bool ShowHelp { get; init; }
 
 	public bool ShowVersion { get; init; }

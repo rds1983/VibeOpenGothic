@@ -172,6 +172,28 @@ public sealed class SkinnedMeshBuilderTests
 	}
 
 	[Fact]
+	public void Build_RemapsBoneIndicesThroughModelMap()
+	{
+		var hierarchy = new[]
+		{
+			new SkinHierarchyNode("root", -1, Matrix.Identity),
+			new SkinHierarchyNode("child", 0, Matrix.Identity),
+		};
+		var influences = new[]
+		{
+			(IReadOnlyList<SkinInfluence>)new[] { new SkinInfluence(1, 1f, new Vector3(0, 0, 0)) },
+			new[] { new SkinInfluence(1, 1f, new Vector3(1, 0, 0)) },
+			new[] { new SkinInfluence(1, 1f, new Vector3(0, 1, 0)) },
+		};
+		var source = Source(influences: influences, hierarchy: hierarchy);
+
+		var result = SkinnedMeshBuilder.Build(source, "remap", new[] { 1, 0 });
+
+		Assert.Equal(0f, result.Mesh.Vertices.Span[0].BlendIndices.ToVector4().X);
+		Assert.Equal(1f, result.Mesh.Vertices.Span[0].BlendWeights.X);
+	}
+
+	[Fact]
 	public void Build_EmptyGeometry_ReturnsEmptyMeshWithSkeleton()
 	{
 		var source = Source(

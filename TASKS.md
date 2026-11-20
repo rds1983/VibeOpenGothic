@@ -30,12 +30,11 @@ A task is done only when:
 
 ## Current focus
 
-**T1.6 - World loading and static rendering.** T1.5 is complete.
+**T1.8 - Data diagnostics.** T1.7 is complete.
 
-> T1.5 is complete: the right-handed camera, depth buffer, DigitalRiseModel
-> primitives, real `TextureData`/`MaterialDesc`, alpha/two-sided checks and the
-> deterministic `--screenshot` path are working. T1.6 loads a real ZEN world and
-> replaces the R0 test scene.
+> T1.7 loads MDS/MDL model VOBs, builds per-mesh skins and animates default idle
+> clips; `--check-world` reports model counts and warnings. T1.8 extends the
+> diagnostics with `--check-assets` / `--dump-data` cross-reference reports.
 
 ## Milestone overview
 
@@ -203,7 +202,7 @@ A task is done only when:
   deterministic 1280x720 PNG, F3 debug overlay and controls HUD. Lightmaps and
   on-screen loading progress remain in the backlog. See Design/04 and Design/07.
 
-- [ ] **T1.7 Skinned VOBs and NPCs**
+- [x] **T1.7 Skinned VOBs and NPCs** (2026-11-21)
   Spawn model VOBs, build `DrModel`s from converted data, draw with
   `SkinnedEffect`, play the default idle animation, and support attachments
   (weapon/armor) by node name. Build one `DrSkin` per mesh from the mesh's node
@@ -213,6 +212,12 @@ A task is done only when:
   **Done when:** NPCs from a real world are visible and animate (screenshot at
   two timestamps); a synthetic model over 72 bones is remapped or reported
   without crashing.
+  Result: MDS/MDL model VOBs load with per-mesh `DrSkin`, default idle clips and
+  static MDM node attachments; >72-bone meshes keep the strongest 72 and warn.
+  `newworld.zen` has 61 unique model assets / 883 instances / 15,068 triangles;
+  233 tests; `--spawn-model Orc.mds` renders an animated Orc at two timestamps.
+  Morph heads, inventory weapon/armor slots and skinned alpha-test remain
+  backlog. See Design/03 and Design/07.
 
 - [ ] **T1.8 Data diagnostics**
   `--check-meshes` (T1.1), `--check-textures` (T1.2), `--check-models` (T1.3),
@@ -476,6 +481,11 @@ A task is done only when:
   top mip only).
 - World lightmap UV projection and `DualTextureEffect` (T1.6 renders solid/alpha
   world materials without baked lightmaps).
+- Morph-mesh heads (`.MMB`) and script-driven NPC body/armor/weapon attachments
+  (T1.7 renders the default body mesh and MDM node attachments; `setVisualBody`
+  belongs to script startup).
+- Alpha-tested skinned materials (T1.7 uses `SkinnedEffect`, which has no alpha
+  test; alpha materials are blended instead of cut out).
 - Original Gothic UI replication: script-created menus, `.FNT` fonts, authentic
   inventory/journal/menu layouts and art.
 - Portal-based visibility from the BSP tree.
