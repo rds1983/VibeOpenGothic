@@ -1,6 +1,6 @@
-using ZenKit;
 using VibeOpenGothic.Assets.Meshes;
 using VibeOpenGothic.Assets.Textures;
+using ZenKit;
 
 namespace VibeOpenGothic.Assets.Materials;
 

@@ -22,6 +22,8 @@ public sealed record CommandLineOptions
 
 	public bool CheckTextures { get; init; }
 
+	public bool CheckModels { get; init; }
+
 	public bool DevMode { get; init; }
 
 	public bool Windowed { get; init; }

@@ -19,6 +19,7 @@ public static class CommandLineParser
 		var probe = false;
 		var checkMeshes = false;
 		var checkTextures = false;
+		var checkModels = false;
 		var devMode = false;
 		var windowed = false;
 		var positionalOnly = false;
@@ -53,6 +54,9 @@ public static class CommandLineParser
 					break;
 				case "--check-textures":
 					checkTextures = true;
+					break;
+				case "--check-models":
+					checkModels = true;
 					break;
 				case "--devmode" or "-devmode":
 					devMode = true;
@@ -140,6 +144,7 @@ public static class CommandLineParser
 			Probe = probe,
 			CheckMeshes = checkMeshes,
 			CheckTextures = checkTextures,
+			CheckModels = checkModels,
 			DevMode = devMode,
 			Windowed = windowed,
 			VersionOverride = versionOverrides.Count == 1

@@ -21,6 +21,7 @@ public sealed class CommandLineParserTests
 		Assert.False(result.Options.Probe);
 		Assert.False(result.Options.CheckMeshes);
 		Assert.False(result.Options.CheckTextures);
+		Assert.False(result.Options.CheckModels);
 		Assert.False(result.Options.DevMode);
 		Assert.False(result.Options.Windowed);
 		Assert.Equal(GameVersionOverride.Auto, result.Options.VersionOverride);
@@ -62,6 +63,15 @@ public sealed class CommandLineParserTests
 		var result = CommandLineParser.Parse(new[] { "--check-textures" });
 
 		Assert.True(result.Options.CheckTextures);
+		Assert.False(result.HasErrors);
+	}
+
+	[Fact]
+	public void Parse_CheckModelsFlag_IsRecognized()
+	{
+		var result = CommandLineParser.Parse(new[] { "--check-models" });
+
+		Assert.True(result.Options.CheckModels);
 		Assert.False(result.HasErrors);
 	}
 

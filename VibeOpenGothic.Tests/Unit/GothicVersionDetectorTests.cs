@@ -1,6 +1,6 @@
 using VibeOpenGothic.Core.CommandLine;
-using VibeOpenGothic.Data.Installs;
 using VibeOpenGothic.Data.Ini;
+using VibeOpenGothic.Data.Installs;
 using VibeOpenGothic.Tests.Fixtures;
 
 namespace VibeOpenGothic.Tests.Unit;

@@ -30,11 +30,12 @@ A task is done only when:
 
 ## Current focus
 
-**T1.3 - Skinned mesh conversion.** T1.2 is complete.
+**T1.4 - Skeletons and animation clips.** T1.3 is complete.
 
-> T1.2 is complete: textures decode through the `-C.TEX` convention, materials map
-> to `MaterialDesc`, and `--check-textures` validates real data. T1.3 converts
-> Gothic's four-position skinned meshes to standard LBS and adds model diagnostics.
+> T1.3 is complete: Gothic's four-position skinned meshes bake to standard LBS,
+> MDH/MDM names resolve from the MDS, `--check-models` validates a real install,
+> and the results are documented in Design/03. T1.4 builds the runtime skeleton
+> and animation clips on top of the converted bind data.
 
 ## Milestone overview
 
@@ -135,7 +136,7 @@ A task is done only when:
   do not crash; `--check-textures` decodes a real sample without failures.
   Visual orientation/alpha is verified in T1.5.
 
-- [ ] **T1.3 Skinned mesh conversion (key task)**
+- [x] **T1.3 Skinned mesh conversion (key task)** (2026-11-20)
   Implement the bake described in Design/03: convert influences and bind
   transforms to engine RHS, build bind global transforms from MDH, normalize
   weights, compute one bind position per vertex, compute inverse bind matrices,
@@ -147,6 +148,8 @@ A task is done only when:
   formula within `1e-5` in the converted space; inconsistent inputs produce the
   documented warning and weighted-average result; `--check-models` runs on a real
   install and reports no crashes; results are documented in Design/03.
+  Result: 117 MDS / 171 skinned meshes, 0 failures; primary bind inconsistency
+  <= 2.713 cm raw / 1.569 cm weighted. See Design/03.
 
 - [ ] **T1.4 Skeletons and animation clips**
   Convert MDH hierarchies and MDS animations to DigitalRiseModel bones, skin
@@ -187,12 +190,12 @@ A task is done only when:
   without crashing.
 
 - [ ] **T1.8 Data diagnostics**
-  `--check-meshes` (T1.1) and `--check-textures` (T1.2) cover world meshes and
-  a texture sample. Extend the diagnostics suite with `--check-models` /
+  `--check-meshes` (T1.1), `--check-textures` (T1.2) and `--check-models` (T1.3)
+  cover world meshes, textures and skinned models. Extend the suite with
   `--check-assets` / `--dump-data`: walk models, textures and scripts; report
-  missing references, invalid weights, degenerate triangles, bone counts and
-  unsupported features as a summary and optional JSON. Never write into the
-  installation.
+  cross-references (animations, attachments, missing VOB assets), degenerate
+  triangles and unsupported features as a summary and optional JSON. Never write
+  into the installation.
   **Done when:** the commands run on a real install and their output is used in
   the task evidence; docs describe the commands and their exit codes.
 
@@ -389,9 +392,11 @@ A task is done only when:
 - [ ] **T4.7 Visual parity pass (last)**
   Replace stock effects only where needed: accurate material behavior, lighting,
   fog, sky, water waves, shadows (optional), color management, and model detail
-  (morphs, LODs). This is the only milestone allowed to prioritize visuals over
-  behavior. Optional original-UI replication (script menus, FNT fonts, authentic
-  layouts/art) also belongs here, only if pursued.
+  (morphs, LODs). If standard LBS visibly distorts vanilla armor/variant meshes
+  whose source bind data is inconsistent, add the optional four-position skinning
+  fallback here. Optional original-UI replication (script menus, FNT fonts,
+  authentic layouts/art) also belongs here, only if pursued. This is the only
+  milestone allowed to prioritize visuals over behavior.
   **Done when:** a side-by-side screenshot review against OpenGothic shows no
   gameplay-relevant visual blockers; all custom effects have fallbacks for
   unsupported hardware.
@@ -439,6 +444,8 @@ A task is done only when:
   inventory/journal/menu layouts and art.
 - Portal-based visibility from the BSP tree.
 - Hardware skinning alternatives for >72 bones.
+- Optional four-position skinning shader for vanilla armor/variant meshes whose
+  bind data is inconsistent under standard LBS (see Design/03).
 - Import/export of converted assets for debugging (glTF).
 - Benchmark mode with a deterministic camera path.
 - Optional high-resolution texture override for mods.

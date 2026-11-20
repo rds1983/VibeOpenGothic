@@ -13,6 +13,23 @@
 A skinned character is `MDS + MDH + MDM`. The renderer needs bind-pose geometry,
 a bone hierarchy, inverse bind matrices, and animation clips.
 
+### Compiled model resolution
+
+An MDS points at source names (`*.ASC`); the loader resolves the compiled files
+case-insensitively, mirroring `Resources::loadMesh` in OpenGothic:
+
+1. Hierarchy: `<skeleton stem>.MDH`, then `<script stem>.MDH`.
+2. If neither exists, a `.MDL` bundle named after either stem; it contains both
+   hierarchy and mesh.
+3. Meshes: `<mesh stem>.MDM` for the skeleton name and for every name in the MDS
+   mesh list.
+
+Examples: `HumanS.mds` (the same file is `HUMANS.MDS` case-insensitively) names
+the skeleton `Hum_Body_Naked0.ASC`; no `Hum_Body_Naked0.MDH` exists, so the
+script stem resolves to `HUMANS.MDH` and the mesh to `HUM_BODY_NAKED0.MDM`.
+`Orc.mds` resolves to `ORC.MDH` + `ORC_BODY.MDM`. `ModelResourceResolver`
+implements this and is unit tested with an in-memory VFS.
+
 ## Coordinate conversion (LHS to RHS)
 
 Gothic uses a **left-handed, Y-up** system: +X right, +Y up, +Z forward into the
@@ -121,6 +138,13 @@ to engine space. For every Gothic vertex:
 4. Store `p_bind` as the single vertex position, plus `n_i` and `w_i`.
 5. Store `inverseBind[i] = inverse(B[i])` once per skeleton.
 
+ZenKit exposes each MDH node transform as a column-vector matrix (translation in
+`M14`/`M24`/`M34` of its `System.Numerics.Matrix4x4`). Transpose it into
+MonoGame's row-vector layout before applying the reflection. Without that
+transpose, bind positions are hundreds of metres off. The MDH root translation is
+added to the root nodes' local translation before composition, matching
+`Skeleton::mkSkeleton` in the original.
+
 At runtime, use standard linear blend skinning:
 
 ```
@@ -141,14 +165,29 @@ which is exactly the Gothic formula.
 
 If the influences disagree, the two formulas cannot both be represented by one
 position. We use the weighted average (step 3), which minimizes the weighted
-squared error at the bind pose. The conversion records
-`max_i |B[n_i] * q_i - p_bind|` as the model's **bind inconsistency**.
+squared error at the bind pose. Two diagnostics are recorded:
+
+- **raw bind inconsistency**: `max_vertex max_i |B[n_i] * q_i - p_bind|`;
+- **weighted bind inconsistency**: `max_vertex sum_i w_i * |B[n_i] * q_i - p_bind|`.
+
+The weighted value is the meaningful one: under rigid bone deltas it bounds the
+difference between standard LBS and the Gothic four-position formula. The raw
+value is dominated by negligible influences.
+
+Real G2 NotR data (2026-11-20) shows that the default skeleton mesh is almost
+always exact: vanilla bodies are `0`, and the worst of 64 primary meshes is
+`2.713 cm` raw / `1.569 cm` weighted. Separate armor, head and variant meshes are
+genuinely inconsistent: many are exported against an approximated bind pose, with
+raw `4-17 cm` and weighted `2-9 cm`. The weighted average is still the best
+single-position representation and matches precisely at bind pose.
+
 Thresholds:
 
-- `< 0.5 cm`: silent (float noise or intentional compression artifacts).
-- `0.5 - 2 cm`: log once per model, at debug level.
-- `> 2 cm`: log a warning with the model name and vertex index; count it in
-  `--check-models`. Modded meshes are the expected cause.
+- `< 0.5 cm` weighted: silent.
+- `0.5 - 2 cm` weighted: log once per model at debug level.
+- `> 2 cm` weighted: log a warning with the mesh name and inconsistent vertex
+  count; count it in `--check-models`. This is normal for vanilla armor meshes and
+  is not an error.
 
 Never fail a world load because of this metric.
 
@@ -176,6 +215,9 @@ public struct SkinnedVertex : IVertexType
     public Byte4   BlendIndices;  // indices into the skeleton
 }
 ```
+
+The vertex declaration is 52 bytes (`SkinnedVertex.Declaration`), matching
+`VertexPositionNormalTextureSkinned`.
 
 `SkinnedEffect` is configured with `WeightsPerVertex = 4`. It accepts at most
 **72 bones**. Count nodes before creating the model:
@@ -264,10 +306,20 @@ Unit tests (no GPU required):
 
 Diagnostics:
 
-- `--check-models` walks every `MDS` reachable from the mounted VFS and reports:
-  max bind inconsistency, weight-sum anomalies, node counts, textures missing,
-  and models over the 72-bone limit. This command is the acceptance evidence for
-  the data-conversion tasks.
+- `--check-models` parses every `MDS` reachable from the mounted VFS, resolves
+  MDH/MDL + MDM files, bakes every unique skinned mesh and reports: primary and
+  variant bind inconsistency, bone counts, over-72 meshes and weight-sum
+  anomalies. It does not crash on missing variants; they are reported as
+  `MISSING`.
+- Current G2 NotR result (2026-11-20, patch 5): 117 MDS scripts, 171 unique
+  skinned meshes (64 primary, 107 variant), 103,421 triangles, 74,613 vertices,
+  0 failures, 0 missing meshes, 1 duplicate reference, 0 weight anomalies. Max
+  bones 79; 10 meshes exceed the 72-bone `SkinnedEffect` limit. Primary bind
+  inconsistency is at most `2.713 cm` raw / `1.569 cm` weighted; all meshes
+  (including armor/variants) reach `43.191 cm` raw / `21.816 cm` weighted.
+  Bones above 72 are handled by the remap described above before rendering; the
+  current task only converts and reports them.
+- This command is the acceptance evidence for the data-conversion tasks.
 
 Visual:
 

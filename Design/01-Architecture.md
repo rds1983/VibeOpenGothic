@@ -159,8 +159,10 @@ VFS bytes -> ZenKit parse -> AssetConverter -> CPU asset (immutable) -> cache
   count, and resolves `GOTHIC.DAT`, the startup world, a sample texture/model and
   the cutscene output units. `--check-meshes` converts every ZEN world mesh and
   reports counts, degenerates and failures. `--check-textures` decodes a sample
-  of TEX files and reports dimensions, mips and alpha. `--dump-data` extracts
-  converted meshes/textures for debugging (developer-only output, never
+  of TEX files and reports dimensions, mips and alpha. `--check-models` resolves
+  and bakes every MDS/MDH/MDM model reachable from the VFS and reports primary
+  and variant bind inconsistency, bone counts and weight anomalies. `--dump-data`
+  extracts converted meshes/textures for debugging (developer-only output, never
   committed).
 - Performance counters: frame time, update time, loaded asset count, draw calls,
   triangle count, GC allocations per frame. The window title currently shows FPS

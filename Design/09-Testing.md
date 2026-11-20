@@ -84,7 +84,7 @@ Rules:
 | Startup/config | CLI parsing, settings round-trip, install validation, fixed-step accumulation, crash report formatting |
 | Install/VFS | Case-insensitive paths, Steam library parsing, VDF timestamps/order, mod filtering, VFS lookup, probe output |
 | Coordinate conversion | Involution, point/normal/matrix/quaternion equivalence, winding/normal relationship, double-conversion detection |
-| Skinning conversion | Bind consistency, weight normalization, padding, bone limits, equivalence with the four-position formula |
+| Skinning conversion | Bind consistency, weighted error, weight normalization, padding, bone limits, equivalence with the four-position formula, MDS/MDH/MDM naming resolution, `--check-models` real-data run |
 | Mesh conversion | Triangles/quads/fans, UV seams, material/lightmap submesh grouping, degenerate/invalid inputs, bounds, `--check-meshes` real-data run |
 | Textures/materials | TEX RGBA/mip decoding, `-C.TEX` resolution, cache/placeholder behavior, alpha-mode mapping, lightmap/two-sided flags |
 | Animation | Frame-to-time conversion, loop/transition timing, event firing, overlay blending |

@@ -1,6 +1,6 @@
+using VibeOpenGothic.Data.Installs;
 using ZenKit;
 using ZkVfs = ZenKit.Vfs;
-using VibeOpenGothic.Data.Installs;
 
 namespace VibeOpenGothic.Data.Vfs;
 
