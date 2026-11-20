@@ -83,9 +83,11 @@ and camera are static, so repeated runs are byte-identical.
   mesh with skinned and attachment parts.
 - Runtime state uses DigitalRiseModel objects directly, with typed tag payloads in
   `Rendering/DigitalRiseModelTags.cs`: `DrModelTag` stores the asset;
-  `DrMeshPartTag` an attachment's bone index; `DrModelInstanceTag` the transform
-  and animation controller; and `DrMaterialTag` the `MaterialDesc`. There are no
-  parallel GPU model or instance wrapper classes.
+  `DrMeshPartTag` an attachment's bone index; and `DrMaterialTag` the
+  `MaterialDesc`. Scene instances live in a private
+  `SkinnedModelRenderer.ModelInstanceState` record holding the
+  `DrModelInstance`, optional `AnimationController` and world `Matrix`. There are
+  no parallel GPU model wrapper classes.
 - Skinned bone matrices come directly from
   `DrModelInstance.GetSkinTransforms(part.Skin.SkinIndex)`; the renderer does not
   keep a second per-instance `Matrix[][]`, because `DrModelInstance` already

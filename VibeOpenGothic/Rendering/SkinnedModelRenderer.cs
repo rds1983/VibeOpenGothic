@@ -25,7 +25,7 @@ public sealed class SkinnedModelRenderer : IDisposable
 	private readonly BasicEffect _basic;
 	private readonly AlphaTestEffect _alphaTest;
 	private readonly Dictionary<string, DrModel> _models = new(StringComparer.OrdinalIgnoreCase);
-	private readonly List<DrModelInstance> _instances = new();
+	private readonly List<ModelInstanceState> _instances = new();
 	private Matrix _view = Matrix.Identity;
 	private Matrix _projection = Matrix.Identity;
 	private bool _disposed;
@@ -126,15 +126,9 @@ public sealed class SkinnedModelRenderer : IDisposable
 
 		foreach (var instance in _instances)
 		{
-			if (instance.Tag is not DrModelInstanceTag state ||
-				instance.Model.Tag is not DrModelTag)
-			{
-				continue;
-			}
+			instance.Controller?.Update(elapsed);
 
-			state.Controller?.Update(elapsed);
-
-			var mesh = instance.Model.Root.Mesh;
+			var mesh = instance.Instance.Model.Root.Mesh;
 			if (mesh is null)
 			{
 				continue;
@@ -144,11 +138,11 @@ public sealed class SkinnedModelRenderer : IDisposable
 			{
 				if (part.Skin is not null)
 				{
-					var matrices = instance.GetSkinTransforms(part.Skin.SkinIndex);
+					var matrices = instance.Instance.GetSkinTransforms(part.Skin.SkinIndex);
 					var descriptor = GetDescriptor(part);
 					var texture = part.Material?.DiffuseTexture;
 
-					_effect.World = state.Transform;
+					_effect.World = instance.Transform;
 					_effect.View = _view;
 					_effect.Projection = _projection;
 					_effect.Texture = texture ?? _textures.White;
@@ -176,9 +170,9 @@ public sealed class SkinnedModelRenderer : IDisposable
 				}
 				else if (part.Tag is DrMeshPartTag attachmentTag)
 				{
-					var nodeTransform = instance.GetBoneGlobalTransform(
+					var nodeTransform = instance.Instance.GetBoneGlobalTransform(
 						attachmentTag.BoneIndex);
-					var world = nodeTransform * state.Transform;
+					var world = nodeTransform * instance.Transform;
 
 					ApplyAttachmentMaterial(part, world);
 					device.SetVertexBuffer(part.VertexBuffer);
@@ -366,8 +360,7 @@ public sealed class SkinnedModelRenderer : IDisposable
 			controller.Update(TimeSpan.Zero);
 		}
 
-		instance.Tag = new DrModelInstanceTag(transform, controller);
-		_instances.Add(instance);
+		_instances.Add(new ModelInstanceState(instance, controller, transform));
 	}
 
 	private void ApplyAttachmentMaterial(DrMeshPart part, Matrix world)
@@ -410,4 +403,9 @@ public sealed class SkinnedModelRenderer : IDisposable
 			? tag.Descriptor
 			: MaterialDesc.Default;
 	}
+
+	private sealed record ModelInstanceState(
+		DrModelInstance Instance,
+		AnimationController? Controller,
+		Matrix Transform);
 }
