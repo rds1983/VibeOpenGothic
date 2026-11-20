@@ -128,9 +128,13 @@ off-graph movement falls back to direct steering with obstacle checks.
 ## Menus and UI scripts
 
 Gothic's main menu and settings menus are script-created (`CREATE_MENU`,
-`CREATE_MENU_ITEM`). The UI layer materializes menu items through Myra and sends
-selection events back into the VM. Do not hard-code Gothic's menu tree; build it
-from instances so mods work.
+`CREATE_MENU_ITEM`). Replicating that system is **not** required initially.
+The client supplies plain Myra screens; the menu externals are registered as
+no-ops that log once, so scripts do not crash when they call them.
+
+If script-created menus are implemented later as optional parity work, build the
+widgets from instances and send selection events back into the VM. Do not
+hard-code Gothic's menu tree.
 
 ## Coordinates and angles at the script boundary
 

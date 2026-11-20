@@ -91,7 +91,7 @@ Rules:
 | Scripts | External arity, marshaling, dialog flow, quest state, save/load of symbols |
 | Gameplay | Inventory transfer, trade price, combat with fixed seeds, clock advance |
 | Save/load | Round-trip each entity, version migration, atomic write, corrupt archive |
-| UI/fonts | FNT glyph metrics, atlas bounds, missing-glyph fallback, StaticSpriteFont creation |
+| UI/fonts | HUD and dialog-presenter bindings, UI scale, default font; FNT glyph metrics only if Gothic fonts are implemented |
 | Rendering | Screenshot smoke test (window opens, non-black frame, expected object count) |
 
 ## Golden data

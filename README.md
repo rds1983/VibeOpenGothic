@@ -14,6 +14,8 @@ Key decisions:
 - Convert Gothic's four-position-per-vertex skinned meshes to standard
   single-position linear blend skinning once, at load time.
 - Use stock MonoGame effects first; visual parity is the last milestone.
+- Use a functional Myra UI first; replicating the original Gothic UI is optional
+  and comes last.
 
 ## Technology
 

@@ -1,40 +1,36 @@
 # UI, fonts, audio and video
 
+## UI priority
+
+UI fidelity is the lowest priority. The initial client uses a straightforward,
+convenient Myra UI with a readable default font. Recreating Gothic's menu art,
+fonts, layouts or script-created menu tree is optional and belongs to the final
+visual parity pass, if it happens at all. Do not block gameplay or mod support on
+authentic UI work.
+
 ## UI stack
 
 Myra provides the desktop, widgets, skinning and input. Its text rendering is
-FontStashSharp-based (`SpriteFontBase`), which fits Gothic fonts well.
+FontStashSharp-based (`SpriteFontBase`), which is sufficient for a functional UI.
 
 ### Fonts
 
-Gothic fonts are `.FNT` bitmap fonts (atlas + glyph metrics, sometimes a
-palette). Convert them entirely at runtime:
-
-1. Decode the FNT with ZenKit, normalize the atlas to RGBA (white glyphs with
-   alpha, so Myra can tint them), and copy glyph rectangles, offsets and
-   advances.
-2. Create `new FontStashSharp.StaticSpriteFont(fontSize, lineHeight, new Point(
-   atlasWidth, atlasHeight))`, populate `Glyphs` (`Int32Map<FontGlyph>`) with
-   `Codepoint`, `Texture`, `TextureOffset`, `Size`, `RenderOffset` and
-   `XAdvance`, set `DefaultCharacter`, and add kerning with
-   `SetGlyphKernAdvance` where the FNT provides it.
-3. Wrap it in a Myra `StylesheetFont` by assigning `StylesheetFont.Font`. That
-   is the same property Myra uses for content-pipeline fonts.
-
-Notes:
-
-- FNT decoding in `Assets` produces CPU-only atlas and glyph data; the `Texture2D`
-  and `StaticSpriteFont` are created in the UI layer so `Assets` stays
-  GPU-free.
-- No MGCB/content-pipeline step is needed; fonts are game data and are created
-  from the mounted VFS.
-- Cache one `StaticSpriteFont` per font file and size. Use `ScaledSpriteFont`
-  for smooth UI scaling, or build a second instance for crisp text at very large
-  UI scales.
-- Provide the Gothic small/medium/large variants and a fallback font for
-  characters missing from the bitmap (e.g. console text).
-- Keep FNT fonts for authentic UI; use FontStashSharp's dynamic TrueType path
-  only as a fallback.
+- **Initial UI:** use a bundled/default FontStashSharp font (or Myra's default
+  assets). It must be legible at the supported UI scales and cover Latin text.
+- **Optional late parity:** Gothic `.FNT` fonts can be converted at runtime. The
+  recipe is kept here for that task:
+  1. Decode the FNT with ZenKit, normalize the atlas to RGBA (white glyphs with
+     alpha, so Myra can tint them), and copy glyph rectangles, offsets and
+     advances.
+  2. Create `new FontStashSharp.StaticSpriteFont(fontSize, lineHeight, new Point(
+     atlasWidth, atlasHeight))`, populate `Glyphs` (`Int32Map<FontGlyph>`) with
+     `Codepoint`, `Texture`, `TextureOffset`, `Size`, `RenderOffset` and
+     `XAdvance`, set `DefaultCharacter`, and add kerning with
+     `SetGlyphKernAdvance` where the FNT provides it.
+  3. Wrap it in a Myra `StylesheetFont` by assigning `StylesheetFont.Font`.
+- FNT decoding in `Assets` would produce CPU-only atlas/glyph data; the
+  `Texture2D` and `StaticSpriteFont` are created in the UI layer so `Assets` stays
+  GPU-free. No MGCB/content-pipeline step is needed.
 - Text is localized by the game data; never hard-code user-visible strings.
 - Interface scale is a setting; lay out with a virtual resolution and scale the
   whole UI.
@@ -45,21 +41,24 @@ Screens:
 | --- | --- | --- |
 | Loading/progress | App | T1.6 |
 | Debug HUD, console | App, Game | T2.2, T3.10 |
-| HUD: health, mana, stamina, focus name, subtitles | Game session | T4.2 |
-| Main menu, settings, save/load list | Script menus + app | T4.2 |
-| Inventory, equipment | Game inventory | T4.3 |
-| Dialog and trade | Game.Dialogs | T4.3 |
+| HUD: health, mana, stamina, focus prompt, subtitles | Game session | T2.7 |
+| Main menu, settings, save/load list, pause | App (plain Myra) | T4.2 |
+| Inventory, equipment | Game inventory | T3.5/T4.3 |
+| Dialog and trade | Game.Dialogs | T3.6/T4.3 |
 | Journal, quest log | Game.Quests | T4.3 |
 | Document/book reader | Item text pages | T4.3 |
 | Chapter screen | Scripts + image/video | T4.5 |
 | Video player | Bink files | T4.5 (stretch) |
+| Original Gothic UI replication | Optional parity work | T4.7/backlog |
 
 Rules:
 
 - UI reads gameplay state through read-only view models; it never mutates the
   world directly. Actions go through commands on the session.
-- Script-created menus (`CREATE_MENU`) are materialized dynamically; do not
-  hard-code Gothic's menu tree.
+- Script-created menus (`CREATE_MENU`, `CREATE_MENU_ITEM`) are **not** required
+  initially. Stub/log those externals so scripts keep running, and use plain
+  Myra screens. If script menus are implemented later, materialize them from
+  instances rather than hard-coding Gothic's tree.
 - Input is routed to UI first when a modal screen is open; gameplay input is
   suppressed, and the cursor is captured only in-game.
 - All screens must be constructible in tests with a fake renderer.

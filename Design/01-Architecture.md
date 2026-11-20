@@ -48,7 +48,7 @@ Folders mirror namespaces. Names below are relative to `VibeOpenGothic/`.
 | `VibeOpenGothic.Physics` | Bepu world, collision geometry, character controller, queries | Core, Bepu |
 | `VibeOpenGothic.Game` | Session, NPCs, combat, inventory, dialogs, quests, save/load, script externals | Core, Data, Assets, World, Physics |
 | `VibeOpenGothic.Rendering` | Graphics device, camera, effects, draw submission, GPU caches | Core, Assets |
-| `VibeOpenGothic.UI` | Myra screens, HUD, menus, fonts | Core, Assets, Game (read-only view models) |
+| `VibeOpenGothic.UI` | Myra screens, HUD, dialogs, menus; default fonts, optional Gothic FNT later | Core, Assets, Game (read-only view models) |
 | `VibeOpenGothic.Audio` | Sound effects, music, listener | Core, Assets, Game (read-only) |
 | `VibeOpenGothic.Video` | Bink and other video playback (late) | Core |
 | `VibeOpenGothic.Tools` | CLI subcommands: probe, dump, benchmark | Core, Data, Assets |

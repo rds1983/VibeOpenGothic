@@ -42,9 +42,9 @@ A task is done only when:
 | --- | --- |
 | M0 Foundation | Builds, runs, finds Gothic, mounts its data, has CI |
 | M1 Data and static world | Converts meshes/models/textures, renders a real world and NPCs |
-| M2 Movement and world interaction | Walking with collision, waynet AI, doors/triggers, dynamic props |
+| M2 Movement and world interaction | Walking with collision, waynet AI, doors/triggers, dynamic props, usable HUD |
 | M3 Scripts and gameplay | Daedalus boot, NPCs, dialogs, combat, magic, quests, saves |
-| M4 Presentation | Audio, UI, menus, visual FX, video, visual parity |
+| M4 Presentation | Functional Myra UI, audio, visual FX, video; optional original UI/visual parity last |
 | M5 Hardening | Performance, mods, settings, packaging, full-game parity |
 
 ---
@@ -240,6 +240,16 @@ A task is done only when:
   **Done when:** walking through a real trigger fires exactly once and is visible
   in the log/console; headless tests cover overlap and cooldown.
 
+- [ ] **T2.7 Minimal Myra HUD**
+  Add a functional Myra overlay: health/mana/stamina bars, focus prompt,
+  subtitle area, FPS/debug counters, and a simple pause/exit screen. Use a
+  default font and plain styling; do not imitate Gothic UI. Bind it to the
+  player/session as those systems land, and make Escape open the pause screen
+  instead of exiting directly.
+  **Done when:** the HUD is visible in a real world and updates from player
+  stats; the pause screen can resume and exit; dev mode toggles the debug
+  overlay.
+
 ## M3 - Scripts and gameplay
 
 - [ ] **T3.1 Daedalus host and core externals**
@@ -277,14 +287,17 @@ A task is done only when:
 
 - [ ] **T3.5 Inventory, equipment and interaction**
   Item instances, containers, take/use/equip/drop, torches, ammo, armor visuals,
-  prices and weight. Connect interaction commands from T2.4 to scripts.
+  prices and weight. Connect interaction commands from T2.4 to scripts. Add a
+  basic functional Myra inventory panel (list/grid and equipment slots) so the
+  flow is usable; visual polish belongs to T4.3.
   **Done when:** the player can loot a chest, equip a weapon/armor, use a potion
   and see stats/appearance update; save/load preserves inventory.
 
 - [ ] **T3.6 Dialogs, trade, quests and documents**
   Info instances, dialog choices and voice/subtitle output, trade UI plumbing,
   mission/quest state, journal entries, and document reading. Use an
-  `IDialogPresenter` so the flow is testable headless.
+  `IDialogPresenter` so the flow is testable headless; the first presenter is a
+  plain Myra list/panel, not a Gothic visual replica.
   **Done when:** a full dialog with a real NPC can be completed, including a
   trade and a quest update; headless dialog tests pass.
 
@@ -326,20 +339,21 @@ A task is done only when:
   **Done when:** footsteps, UI sounds, ambient loops and dialog voice play in a
   real world; graphics-free audio tests verify category routing and limits.
 
-- [ ] **T4.2 UI foundation, menus and HUD**
-  Myra desktop, Gothic FNT to FontStashSharp `StaticSpriteFont` conversion at
-  runtime, UI scale, main menu/settings/save-load screens, script-created menus,
-  loading screens, HUD bars and subtitles, and input routing between UI and
-  gameplay.
+- [ ] **T4.2 Full menu, settings and pause UI**
+  Plain Myra screens: main menu, settings (video/audio/gameplay), save/load list,
+  pause menu, loading/progress screens, UI scale and input routing between UI and
+  gameplay. Use a default font and functional styling; do not replicate Gothic
+  menus or fonts. Script-created menu externals remain stubbed/logged.
   **Done when:** the game can be started, configured, saved and loaded entirely
-  through the UI; menu trees come from script instances, not hard-coded data;
-  Gothic fonts render with correct glyph metrics and tinting.
+  through the UI; every screen is usable with a keyboard and mouse without
+  debug commands.
 
 - [ ] **T4.3 Inventory, journal, dialog and document UI**
-  Inventory grid/equipment, item tooltips, journal/quest log, dialog and trade
-  screens, map (if data is available), book reader. Keyboard/mouse and gamepad
-  navigation. If a world map texture is used, convert the marker and map
-  orientation consistently with the RHS engine space.
+  Functional Myra layouts: inventory grid/equipment, item tooltips, journal/quest
+  log, dialog and trade screens, map (if data is available), book reader. Default
+  fonts and plain styling are sufficient. Keyboard/mouse and gamepad navigation.
+  If a world map texture is used, convert the marker and map orientation
+  consistently with the RHS engine space.
   **Done when:** all core gameplay screens are usable without debug commands;
   the map marker matches the player's position; UI state survives save/load.
 
@@ -367,7 +381,8 @@ A task is done only when:
   Replace stock effects only where needed: accurate material behavior, lighting,
   fog, sky, water waves, shadows (optional), color management, and model detail
   (morphs, LODs). This is the only milestone allowed to prioritize visuals over
-  behavior.
+  behavior. Optional original-UI replication (script menus, FNT fonts, authentic
+  layouts/art) also belongs here, only if pursued.
   **Done when:** a side-by-side screenshot review against OpenGothic shows no
   gameplay-relevant visual blockers; all custom effects have fallbacks for
   unsupported hardware.
@@ -410,6 +425,8 @@ A task is done only when:
 ## Backlog / ideas (not scheduled)
 
 - GOG/other launcher install detection and an interactive folder picker.
+- Original Gothic UI replication: script-created menus, `.FNT` fonts, authentic
+  inventory/journal/menu layouts and art.
 - Portal-based visibility from the BSP tree.
 - Hardware skinning alternatives for >72 bones.
 - Import/export of converted assets for debugging (glTF).

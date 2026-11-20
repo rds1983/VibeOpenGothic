@@ -164,6 +164,9 @@ Only after explicit confirmation:
 - Gothic data is left-handed and the engine is right-handed. Convert once in the
   loader through `Core.CoordinateSystem`; never flip axes, winding or UVs ad hoc
   in gameplay, rendering or physics.
+- UI work: build functional, convenient Myra screens first. Do not replicate
+  Gothic's UI, fonts or script-created menus unless a task explicitly asks for
+  that parity work.
 - Prefer deterministic tests: inject the clock and random seed.
 - Avoid per-frame allocations in gameplay/render hot paths; measure before
   optimizing.

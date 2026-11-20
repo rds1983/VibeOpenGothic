@@ -16,7 +16,8 @@ data plus optional mod files:
 2. Worlds load, characters and creatures animate, dialogue and trade work.
 3. Combat, magic, inventory, quests, journals, documents and triggers behave
    like the original closely enough that a player notices no difference beyond
-   graphics quality.
+   graphics quality and UI presentation. A functional, convenient Myra UI is
+   acceptable; replicating the original UI is not required.
 4. Saves can be created, listed and loaded reliably across application restarts,
    including world changes and script state.
 5. Content mods that only rely on regular scripting work (see
@@ -38,6 +39,9 @@ animate them, and interact with a door.
 - Shipping any Gothic assets, extracted data, or a Gothic installer.
 - Pixel-perfect graphics parity. Rendering is intentionally the last priority
   (see [07-Rendering.md](07-Rendering.md)).
+- Replicating Gothic's UI look, fonts or script-created menu tree. The initial
+  client uses a straightforward Myra UI; authentic UI is an optional late
+  parity task.
 
 ## Principles
 
@@ -53,7 +57,10 @@ animate them, and interact with a door.
    until gameplay is complete. Custom shaders only replace them at the end.
 5. **Small, verifiable steps.** Every task in TASKS.md has a "done when" clause
    and is confirmed by the developer before it is checked off.
-6. **No accidental asset distribution.** The repository contains code and docs
+6. **Function before fidelity for UI.** Build a usable Myra HUD, menus and
+   dialogs first. Gothic fonts, script menus and original layouts are optional
+   and come last, if at all.
+7. **No accidental asset distribution.** The repository contains code and docs
    only. Tests that need Gothic data use an explicitly configured local path and
    are skipped when it is absent.
 

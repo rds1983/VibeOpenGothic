@@ -146,10 +146,9 @@ Gothic's lighting is mostly baked:
 ## UI rendering
 
 Myra renders after the 3D scene with its own batch and uses FontStashSharp for
-text. Gothic `.FNT` files are converted at runtime into a `StaticSpriteFont`
-(atlas + glyph rectangles + advances), so no content pipeline or MGCB step is
-needed. This covers HUD, dialog, journal, menu and console text; see
-[08-UI-Audio-Video.md](08-UI-Audio-Video.md).
+text. The initial UI uses a default FontStashSharp font; Gothic `.FNT` fonts are
+an optional parity feature (see
+[08-UI-Audio-Video.md](08-UI-Audio-Video.md)) and do not block gameplay.
 
 ## Diagnostics
 
