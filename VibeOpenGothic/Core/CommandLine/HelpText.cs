@@ -20,6 +20,7 @@ public static class HelpText
           -g2c               Assume Gothic II Classic
           --data-dir <path>  Settings, log and save directory
           --probe            Print installation diagnostics and exit
+          --check-meshes     Convert every ZEN world mesh and report counts
           --help             Show this help
           --version          Show version information
 

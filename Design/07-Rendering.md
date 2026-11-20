@@ -116,8 +116,10 @@ Gothic's lighting is mostly baked:
 
 - Convert each world mesh polygon into triangles grouped by
   (material, lightmap). Build one immutable vertex/index buffer per group.
-- Skip portals, occluders and ghost occluders as render geometry; they are
-  visibility data.
+  Low-LOD polygons are skipped; the highest LOD is kept.
+- Keep portals, occluders and ghost occluders in the converted mesh; they are
+  visibility data and culling/portal logic decides what to draw in T1.9. Do not
+  discard geometry during conversion.
 - VOB static meshes are instanced by transform (draw the same buffer with
   different world matrices) where materials match.
 - First pass: no BSP/portal culling. Add frustum and distance culling in T1.9.

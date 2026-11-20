@@ -18,6 +18,8 @@ public sealed record CommandLineOptions
 
     public bool Probe { get; init; }
 
+    public bool CheckMeshes { get; init; }
+
     public bool DevMode { get; init; }
 
     public bool Windowed { get; init; }

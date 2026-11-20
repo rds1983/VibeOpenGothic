@@ -85,6 +85,7 @@ Rules:
 | Install/VFS | Case-insensitive paths, Steam library parsing, VDF timestamps/order, mod filtering, VFS lookup, probe output |
 | Coordinate conversion | Involution, point/normal/matrix/quaternion equivalence, winding/normal relationship, double-conversion detection |
 | Skinning conversion | Bind consistency, weight normalization, padding, bone limits, equivalence with the four-position formula |
+| Mesh conversion | Triangles/quads/fans, UV seams, material/lightmap submesh grouping, degenerate/invalid inputs, bounds, `--check-meshes` real-data run |
 | Animation | Frame-to-time conversion, loop/transition timing, event firing, overlay blending |
 | World loading | VOB type mapping, transform composition, waynet integrity, missing assets |
 | Physics | Drop/rest, slopes, steps, wall slide, moving platforms, ray masks |

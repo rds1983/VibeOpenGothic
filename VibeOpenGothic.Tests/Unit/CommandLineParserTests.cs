@@ -19,6 +19,7 @@ public sealed class CommandLineParserTests
         Assert.False(result.Options.ShowHelp);
         Assert.False(result.Options.ShowVersion);
         Assert.False(result.Options.Probe);
+        Assert.False(result.Options.CheckMeshes);
         Assert.False(result.Options.DevMode);
         Assert.False(result.Options.Windowed);
         Assert.Equal(GameVersionOverride.Auto, result.Options.VersionOverride);
@@ -42,6 +43,15 @@ public sealed class CommandLineParserTests
         var result = CommandLineParser.Parse(new[] { "--version" });
 
         Assert.True(result.Options.ShowVersion);
+        Assert.False(result.HasErrors);
+    }
+
+    [Fact]
+    public void Parse_CheckMeshesFlag_IsRecognized()
+    {
+        var result = CommandLineParser.Parse(new[] { "--check-meshes" });
+
+        Assert.True(result.Options.CheckMeshes);
         Assert.False(result.HasErrors);
     }
 

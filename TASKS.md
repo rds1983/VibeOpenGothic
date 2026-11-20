@@ -30,11 +30,11 @@ A task is done only when:
 
 ## Current focus
 
-**T1.1 - Mesh conversion core.** T1.0 is complete.
+**T1.2 - Textures and material mapping.** T1.1 is complete.
 
-> T1.0 is complete: all Gothic-space geometry can be converted exactly once
-> through `Core.CoordinateSystem`. T1.1 applies it to static/world meshes and
-> produces the first engine `MeshData`.
+> T1.1 is complete: world/static and model meshes convert to engine `MeshData`
+> and `--check-meshes` validates all world meshes. T1.2 adds texture decoding,
+> caching and material descriptors.
 
 ## Milestone overview
 
@@ -108,27 +108,31 @@ A task is done only when:
   normal/winding relationship and double-conversion detection; the helper is the
   only place in the codebase that flips an axis.
 
-- [ ] **T1.1 Mesh conversion core**
+- [x] **T1.1 Mesh conversion core** (2026-11-20)
   Convert `ZenKit.Mesh` (world/static) and `MultiResolutionMesh` (models) to
   engine `MeshData`: positions, normals, UVs, submeshes, material indices,
   triangle indices, bounds. Convert all geometry to engine RHS with T1.0
   (including reversed winding and reflected normals). Skip degenerate triangles,
-  log counts, handle non-triangular polygons by fan triangulation. Keep the
-  highest LOD.
-  **Done when:** synthetic polygons (triangles, quads, fans) convert correctly in
-  RHS; real-data diagnostics report triangle counts and no crashes for all
-  worlds; an asymmetric textured mesh has correct facing and readable text;
-  `MeshData` has no ZenKit or GPU dependencies.
+  count invalid polygons, and handle non-triangular polygons by fan
+  triangulation. Keep the highest LOD. Add `--check-meshes` to convert every ZEN
+  world mesh reachable from the VFS and report counts/failures.
+  **Done when:** synthetic triangles, quads, fans, UV seams, material/lightmap
+  groups and degenerate inputs convert correctly in RHS; UVs are preserved;
+  `--check-meshes` runs on a real install without crashes and reports triangle
+  counts; `MeshData` has no ZenKit or GPU dependencies. Visual orientation/text
+  verification happens in T1.5.
 
 - [ ] **T1.2 Textures and material mapping**
   Decode `.TEX` to RGBA (use ZenKit's RGBA mipmaps), build a texture cache with
   placeholder fallbacks, resolve texture names case-insensitively, and map
   Gothic materials to `MaterialDesc` (color, texture scale, alpha function,
-  two-sided, lightmap presence, texture animation, wave). Report missing
-  textures once per name.
-  **Done when:** real textures render with correct orientation and alpha; unit
-  tests cover material mapping and cache behavior; missing textures do not
-  crash.
+  two-sided, lightmap presence, texture animation, wave). Respect
+  `MeshSubMesh.MaterialIndex` semantics: world/static meshes index the source
+  material list; model (MDM) meshes use the submesh index and its material.
+  Report missing textures once per name.
+  **Done when:** decoded real textures have correct dimensions, mipmaps and
+  alpha; unit tests cover material mapping and cache behavior; missing textures
+  do not crash. Visual orientation/alpha is verified in T1.5.
 
 - [ ] **T1.3 Skinned mesh conversion (key task)**
   Implement the bake described in Design/03: convert influences and bind
@@ -180,8 +184,9 @@ A task is done only when:
   without crashing.
 
 - [ ] **T1.8 Data diagnostics**
-  `--check-assets` / `--check-models` / `--dump-data` commands: walk worlds,
-  models, textures and scripts; report missing references, invalid weights,
+  `--check-meshes` (T1.1) covers world/static mesh conversion. Extend the
+  diagnostics suite with `--check-models` / `--check-assets` / `--dump-data`:
+  walk models, textures and scripts; report missing references, invalid weights,
   degenerate triangles, bone counts and unsupported features as a summary and
   optional JSON. Never write into the installation.
   **Done when:** the commands run on a real install and their output is used in

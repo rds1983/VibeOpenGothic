@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using VibeOpenGothic.App;
+using VibeOpenGothic.Assets.Meshes;
 using VibeOpenGothic.Core.CommandLine;
 using VibeOpenGothic.Core.Diagnostics;
 using VibeOpenGothic.Core.Logging;
@@ -147,6 +148,11 @@ internal static class Program
                 }
 
                 return probe.Success ? ExitSuccess : ExitFailure;
+            }
+
+            if (options.CheckMeshes)
+            {
+                return MeshCheckTool.Run(install, vfs);
             }
 
             if (!vfs.FileExists(install.DefaultGameDatName))

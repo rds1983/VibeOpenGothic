@@ -76,6 +76,19 @@ archive with size and timestamp, the total VFS file count, the resolved version
 and sample assets; it is the first thing to check for "missing asset" bug
 reports.
 
+## ZenKit usage notes
+
+These are binding-specific behaviors that have already caused hangs or crashes:
+
+- List-valued properties (`mesh.Positions`, `mesh.Features`, `world.Mesh.Polygons`,
+  `submesh.Wedges`, ...) rebuild a managed list on **every** access. Never index
+  such a property inside a loop; materialize it once:
+  `var positions = mesh.Positions;`.
+- `World.Mesh` is borrowed from the world. Keep the `World` alive while reading
+  and converting the mesh (`GC.KeepAlive(world)` after the conversion), otherwise
+  the native mesh can be freed underneath the wrapper.
+- Native wrappers are not thread-safe. Confine them to the loader thread.
+
 ## File formats
 
 All format parsing is delegated to ZenKit. Our loaders convert ZenKit objects to

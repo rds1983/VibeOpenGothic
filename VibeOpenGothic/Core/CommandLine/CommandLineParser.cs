@@ -17,6 +17,7 @@ public static class CommandLineParser
         var showHelp = false;
         var showVersion = false;
         var probe = false;
+        var checkMeshes = false;
         var devMode = false;
         var windowed = false;
         var positionalOnly = false;
@@ -45,6 +46,9 @@ public static class CommandLineParser
                     break;
                 case "--probe":
                     probe = true;
+                    break;
+                case "--check-meshes":
+                    checkMeshes = true;
                     break;
                 case "--devmode" or "-devmode":
                     devMode = true;
@@ -130,6 +134,7 @@ public static class CommandLineParser
             ShowHelp = showHelp,
             ShowVersion = showVersion,
             Probe = probe,
+            CheckMeshes = checkMeshes,
             DevMode = devMode,
             Windowed = windowed,
             VersionOverride = versionOverrides.Count == 1
