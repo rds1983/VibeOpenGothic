@@ -30,12 +30,12 @@ A task is done only when:
 
 ## Current focus
 
-**T1.5 - Renderer bring-up.** T1.4a is complete.
+**T1.6 - World loading and static rendering.** T1.5 is complete.
 
-> T1.4a returns a plain `DrModel` from model loading; Gothic clip metadata lives
-> on `GothicAnimationClip : AnimationClip` inside `DrModel.Animations`. T1.5 opens
-> a MonoGame window and validates the converted meshes, textures and animations
-> with stock effects.
+> T1.5 is complete: the right-handed camera, depth buffer, DigitalRiseModel
+> primitives, real `TextureData`/`MaterialDesc`, alpha/two-sided checks and the
+> deterministic `--screenshot` path are working. T1.6 loads a real ZEN world and
+> replaces the R0 test scene.
 
 ## Milestone overview
 
@@ -176,7 +176,7 @@ A task is done only when:
   Result: runtime asset is `DrModel`; 217 tests pass; `--check-animations` still
   reports 0 non-finite transforms and 0 failures. See Design/03.
 
-- [ ] **T1.5 Renderer bring-up**
+- [x] **T1.5 Renderer bring-up** (2026-11-20)
   MonoGame window, `GraphicsDevice` lifecycle, right-handed `GothicCamera`, depth
   buffer, `BasicEffect` test scene (grid, textured cube, unlit normals debug),
   resize handling, screenshot command. No custom shaders. Use `TextureData` and
@@ -185,13 +185,16 @@ A task is done only when:
   **Done when:** the test scene renders correctly (screenshot), converted data is
   verified with an asymmetric texture (readable text, correct winding), and
   `--screenshot` produces a deterministic PNG.
+  Result: DigitalRiseModel primitives + `DrMeshPart`/`DrMaterial`, 1280x720
+  deterministic PNG, 223 tests. See Design/07.
 
 - [ ] **T1.6 World loading and static rendering**
   Load a ZEN world, convert the world mesh and VOB transforms/waypoints to engine
   RHS, batch by material/lightmap, spawn static VOBs with transform composition,
-  resolve the start point, and render the world from a free camera. Use
-  `AlphaTestEffect` and `DualTextureEffect` where applicable. Add loading progress
-  and timings.
+  resolve the start point, and render the world from a free camera. Reuse the
+  T1.5 `GothicRenderer`, `GothicCamera`, `GpuTextureCache` and `--screenshot`
+  path; replace the R0 test scene. Use `AlphaTestEffect` and `DualTextureEffect`
+  where applicable. Add loading progress and timings.
   **Done when:** `newworld.zen` renders recognizably from the start point
   (screenshot), nothing is inside-out or offset by a double conversion, no VOB
   type crashes, and a data test asserts counts/bounds within tolerances.
@@ -200,8 +203,9 @@ A task is done only when:
   Spawn model VOBs, build `DrModel`s from converted data, draw with
   `SkinnedEffect`, play the default idle animation, and support attachments
   (weapon/armor) by node name. Build one `DrSkin` per mesh from the mesh's node
-  list and the DrModel absolute bind transforms (T1.4a), which also handles the
-  72-bone limit by construction.
+  list and the DrModel absolute bind transforms (T1.4a), which reduces the joint
+  set to the bones the mesh actually uses; still split/remap if a mesh exceeds
+  72 joints.
   **Done when:** NPCs from a real world are visible and animate (screenshot at
   two timestamps); a synthetic model over 72 bones is remapped or reported
   without crashing.
@@ -461,6 +465,8 @@ A task is done only when:
 
 - GOG/other launcher install detection and an interactive folder picker.
 - Texture frame animation (`loadFrames`) for animated materials.
+- Full GPU mip-chain upload and sampler/anisotropic policy (T1.5 uploads the
+  top mip only).
 - Original Gothic UI replication: script-created menus, `.FNT` fonts, authentic
   inventory/journal/menu layouts and art.
 - Portal-based visibility from the BSP tree.

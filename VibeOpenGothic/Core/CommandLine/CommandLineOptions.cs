@@ -12,6 +12,8 @@ public sealed record CommandLineOptions
 
 	public string? DataDirectory { get; init; }
 
+	public string? ScreenshotPath { get; init; }
+
 	public bool ShowHelp { get; init; }
 
 	public bool ShowVersion { get; init; }

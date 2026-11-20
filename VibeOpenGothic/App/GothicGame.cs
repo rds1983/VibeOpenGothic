@@ -4,26 +4,31 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using VibeOpenGothic.Core.Logging;
 using VibeOpenGothic.Core.Timing;
+using VibeOpenGothic.Rendering;
 
 namespace VibeOpenGothic.App;
 
 /// <summary>
-/// MonoGame host. T0.2 only proves the window and fixed-step loop; world
-/// loading and rendering arrive in later tasks.
+/// MonoGame host. T1.5 owns the window and renderer; world loading arrives in
+/// later tasks.
 /// </summary>
 public sealed class GothicGame : Game
 {
+	private const int ScreenshotWidth = 1280;
+	private const int ScreenshotHeight = 720;
+
 	private static readonly TimeSpan LogicStep = TimeSpan.FromSeconds(1.0 / 60.0);
-	private static readonly Color ClearColor = new(18, 20, 24);
 
 	private readonly GraphicsDeviceManager _graphics;
 	private readonly GothicGameOptions _options;
 	private readonly FixedStepRunner _fixedStep = new(LogicStep, maxStepsPerFrame: 4);
 	private readonly FrameStats _frames = new();
 
+	private GothicRenderer? _renderer;
 	private double _lastUpdateMs;
 	private double _titleRefreshSeconds;
 	private bool _firstFrameLogged;
+	private bool _screenshotAttempted;
 
 	public GothicGame(GothicGameOptions options)
 	{
@@ -61,6 +66,10 @@ public sealed class GothicGame : Game
 
 	public bool IsWindowed { get; private set; }
 
+	public bool ScreenshotSaved { get; private set; }
+
+	public string? ScreenshotError { get; private set; }
+
 	protected override void Initialize()
 	{
 		// The device exists by now (Game.DoInitialize creates it first), but
@@ -82,6 +91,19 @@ public sealed class GothicGame : Game
 		Log.Info(
 			"App",
 			$"MonoGame initialized: {WindowWidth}x{WindowHeight}, windowed={IsWindowed}, renderer={GraphicsDevice.GraphicsProfile}");
+	}
+
+	protected override void LoadContent()
+	{
+		base.LoadContent();
+		_renderer = new GothicRenderer(GraphicsDevice, _options.Vfs);
+	}
+
+	protected override void UnloadContent()
+	{
+		_renderer?.Dispose();
+		_renderer = null;
+		base.UnloadContent();
 	}
 
 	protected override void Update(GameTime gameTime)
@@ -106,7 +128,32 @@ public sealed class GothicGame : Game
 	{
 		var drawStart = Stopwatch.GetTimestamp();
 
-		GraphicsDevice.Clear(ClearColor);
+		if (!_screenshotAttempted &&
+			!string.IsNullOrWhiteSpace(_options.CommandLine.ScreenshotPath))
+		{
+			_screenshotAttempted = true;
+			try
+			{
+				CaptureScreenshot(gameTime, _options.CommandLine.ScreenshotPath);
+			}
+			catch (Exception exception)
+			{
+				ScreenshotError = exception.Message;
+				Log.Error("Render", $"Screenshot failed: {exception}");
+			}
+
+			Exit();
+			return;
+		}
+
+		if (_renderer is not null)
+		{
+			_renderer.Draw(gameTime);
+		}
+		else
+		{
+			GraphicsDevice.Clear(GothicRenderer.ClearColor);
+		}
 
 		var drawMs = Stopwatch.GetElapsedTime(drawStart).TotalMilliseconds;
 		var elapsed = gameTime.ElapsedGameTime.TotalSeconds;
@@ -128,6 +175,44 @@ public sealed class GothicGame : Game
 		}
 
 		base.Draw(gameTime);
+	}
+
+	private void CaptureScreenshot(GameTime gameTime, string path)
+	{
+		if (_renderer is null)
+		{
+			throw new InvalidOperationException("Renderer is not initialized.");
+		}
+
+		var fullPath = Path.GetFullPath(path);
+		var directory = Path.GetDirectoryName(fullPath);
+		if (!string.IsNullOrEmpty(directory))
+		{
+			Directory.CreateDirectory(directory);
+		}
+
+		using var target = new RenderTarget2D(
+			GraphicsDevice,
+			ScreenshotWidth,
+			ScreenshotHeight,
+			mipMap: false,
+			SurfaceFormat.Color,
+			DepthFormat.Depth24);
+
+		try
+		{
+			GraphicsDevice.SetRenderTarget(target);
+			_renderer.Draw(gameTime);
+		}
+		finally
+		{
+			GraphicsDevice.SetRenderTarget(null);
+		}
+
+		using var stream = File.Create(fullPath);
+		target.SaveAsPng(stream, target.Width, target.Height);
+		ScreenshotSaved = true;
+		Log.Info("Render", $"Screenshot saved: {fullPath}");
 	}
 
 	protected override void OnExiting(object sender, EventArgs args)

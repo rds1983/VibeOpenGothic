@@ -16,6 +16,7 @@ public sealed class CommandLineParserTests
 		Assert.Null(result.Options.StartupWorld);
 		Assert.Null(result.Options.SaveToLoad);
 		Assert.Null(result.Options.DataDirectory);
+		Assert.Null(result.Options.ScreenshotPath);
 		Assert.False(result.Options.ShowHelp);
 		Assert.False(result.Options.ShowVersion);
 		Assert.False(result.Options.Probe);
@@ -82,6 +83,15 @@ public sealed class CommandLineParserTests
 		var result = CommandLineParser.Parse(new[] { "--check-animations" });
 
 		Assert.True(result.Options.CheckAnimations);
+		Assert.False(result.HasErrors);
+	}
+
+	[Fact]
+	public void Parse_ScreenshotPath_IsRecognized()
+	{
+		var result = CommandLineParser.Parse(new[] { "--screenshot", "shots/test.png" });
+
+		Assert.Equal("shots/test.png", result.Options.ScreenshotPath);
 		Assert.False(result.HasErrors);
 	}
 
@@ -191,6 +201,7 @@ public sealed class CommandLineParserTests
 	[InlineData("-w")]
 	[InlineData("-save")]
 	[InlineData("--data-dir")]
+	[InlineData("--screenshot")]
 	public void Parse_MissingValue_AddsError(string argument)
 	{
 		var result = CommandLineParser.Parse(new[] { argument });

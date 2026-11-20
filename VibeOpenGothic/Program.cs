@@ -197,6 +197,14 @@ internal static class Program
 				settings.WindowWidth = game.WindowWidth;
 				settings.WindowHeight = game.WindowHeight;
 				settings.Windowed = game.IsWindowed;
+
+				if (!string.IsNullOrWhiteSpace(options.ScreenshotPath) && !game.ScreenshotSaved)
+				{
+					var message = $"Screenshot failed: {game.ScreenshotError ?? "unknown error"}";
+					Log.Error("Render", message);
+					PrintError(message);
+					return ExitFailure;
+				}
 			}
 
 			try

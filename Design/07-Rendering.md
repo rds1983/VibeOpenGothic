@@ -18,6 +18,38 @@ Renderer ladder:
 
 Each stage must be replaceable without touching gameplay code.
 
+## R0 test scene (T1.5)
+
+The first renderer is a fixed test scene, not a world:
+
+- A right-handed `GothicCamera` using `CreateLookAt` and
+  `CreatePerspectiveFieldOfView`; no mirrored view matrix or per-draw sign flips.
+- A depth-buffered backbuffer, a dark ground plane and a grid.
+- Geometry comes from DigitalRiseModel primitives: `MeshPrimitives.CreateBoxMesh`
+  for the cube, `CreatePlaneMesh` for the ground and map/sign quads, and
+  `CreatePlaneLinesMeshPart` for the grid. Each part is a `DrMeshPart`; texture
+  and colour live on a `DrMaterial`. `DrMaterial.Tag` stores the richer
+  `MaterialDesc` because DigitalRiseModel has no alpha-mode/two-sided fields.
+- The cube uses real `TextureData` and a `MaterialDesc` built by
+  `MaterialBuilder` from the sign atlas `OBJ_CITY_SIGNSALL_01`.
+- A parchment map quad (`MAP_NEWWORLD`) to verify UV orientation and readable
+  asymmetric content.
+- An alpha-tested `NW_SEQ_EGG_SIGN_01` quad with readable text, plus a rotated
+  copy showing its back face. The material's `IsTwoSided` heuristic selects
+  `RasterizerState.CullNone`; a solid material uses `CullCounterClockwise`.
+- The unlit normal-colour cube uses a custom `DrMeshPart` because DigitalRiseModel
+  has no vertex-colour primitive. Its colours encode the face normals and are
+  drawn with `BasicEffect` lighting disabled.
+- `GpuTextureCache` is the only place that uploads `TextureData`. T1.5 uploads
+  the top mip; full mip-chain upload and sampler policy belong to performance
+  work once real worlds are measured.
+- Window resize is handled by updating the camera aspect from
+  `GraphicsDevice.Viewport` every draw.
+
+The screenshot command renders this scene once into a fixed 1280x720
+`RenderTarget2D` with a depth buffer and writes a PNG. The scene is static and the
+camera is fixed, so repeated runs produce byte-identical PNGs.
+
 ## Platform and device
 
 - MonoGame DesktopGL, `GraphicsProfile.HiDef`.
@@ -156,8 +188,9 @@ an optional parity feature (see
 ## Diagnostics
 
 - FPS/frame-time overlay, draw calls, triangles, visible objects, texture memory.
-- Screenshot command (`--screenshot <path>` or F12) writes a PNG with a fixed
-  camera setup; screenshots are the evidence for visual tasks.
+- Screenshot command (`--screenshot <path>`) writes a PNG with a fixed
+  camera setup; screenshots are the evidence for visual tasks. `--screenshot`
+  uses a fixed 1280x720 render target and exits after writing the file.
 - A null renderer lets headless tests run sessions without a `GraphicsDevice`.
 - Debug wireframes: collision meshes, VOB bounds, waynet, skeleton bones.
 

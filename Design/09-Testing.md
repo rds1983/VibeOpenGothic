@@ -94,7 +94,7 @@ Rules:
 | Gameplay | Inventory transfer, trade price, combat with fixed seeds, clock advance |
 | Save/load | Round-trip each entity, version migration, atomic write, corrupt archive |
 | UI/fonts | HUD and dialog-presenter bindings, UI scale, default font; FNT glyph metrics only if Gothic fonts are implemented |
-| Rendering | Screenshot smoke test (window opens, non-black frame, expected object count) |
+| Rendering | Camera handedness/aspect, deterministic `--screenshot` PNG, non-black frame, real texture orientation/alpha/two-sided smoke check |
 
 ## Golden data
 

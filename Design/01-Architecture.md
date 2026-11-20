@@ -163,8 +163,9 @@ VFS bytes -> ZenKit parse -> AssetConverter -> CPU asset (immutable) -> cache
   and bakes every MDS/MDH/MDM model reachable from the VFS and reports primary
   and variant bind inconsistency, bone counts and weight anomalies.
   `--check-animations` loads every MDS/MAN, builds runtime skeletons and clips,
-  and poses each clip at frame zero and its midpoint. `--dump-data` extracts
-  converted meshes/textures for debugging (developer-only output, never
+  and poses each clip at frame zero and its midpoint. `--screenshot <path>`
+  renders the R0 test scene to a deterministic 1280x720 PNG. `--dump-data`
+  extracts converted meshes/textures for debugging (developer-only output, never
   committed).
 - Performance counters: frame time, update time, loaded asset count, draw calls,
   triangle count, GC allocations per frame. The window title currently shows FPS

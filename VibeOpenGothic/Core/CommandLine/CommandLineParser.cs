@@ -14,6 +14,7 @@ public static class CommandLineParser
 		string? startupWorld = null;
 		string? saveToLoad = null;
 		string? dataDirectory = null;
+		string? screenshotPath = null;
 		var showHelp = false;
 		var showVersion = false;
 		var probe = false;
@@ -105,6 +106,13 @@ public static class CommandLineParser
 					}
 
 					break;
+				case "--screenshot":
+					if (TryTakeValue(args, ref index, argument, errors, out var screenshot))
+					{
+						screenshotPath = screenshot;
+					}
+
+					break;
 				default:
 					if (argument.StartsWith("-game:", StringComparison.OrdinalIgnoreCase))
 					{
@@ -143,6 +151,7 @@ public static class CommandLineParser
 			StartupWorld = startupWorld,
 			SaveToLoad = saveToLoad,
 			DataDirectory = dataDirectory,
+			ScreenshotPath = screenshotPath,
 			ShowHelp = showHelp,
 			ShowVersion = showVersion,
 			Probe = probe,
