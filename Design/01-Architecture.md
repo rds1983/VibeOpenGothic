@@ -74,15 +74,14 @@ Hard rules:
 
 ```
 Program
-  -> CommandLine parse -> Log init
-  -> GothicInstall.Locate -> GameVfs.Mount
+  -> CommandLineParser
+  -> AppPaths -> Log.Start -> CrashHandler.Install
+  -> SettingsStore.Load
+  -> GothicInstallLocator -> (T0.3: GameVfs.Mount)
   -> GothicGame : Microsoft.Xna.Framework.Game
-       services (constructed once):
-         Settings, AssetLibrary, TextureCache, ModelCache
-         GameSession (current world/scripts/player)
-         Renderer, UiRoot, AudioSystem
-       Update(GameTime):  session.UpdateLogic(dt)  -> world, AI, physics, scripts
-       Draw(GameTime):    renderer.Render(world, camera) -> ui.Draw()
+       Core.Timing.FixedStepRunner   60 Hz logic, max 4 catch-up steps
+       Core.Timing.FrameStats        frame/logic counters for the title and logs
+       (future) GameSession, Renderer, UiRoot, AudioSystem
 ```
 
 `GameSession` is the unit that a save game maps to. Changing a world keeps the
@@ -94,9 +93,12 @@ re-bound, and startup/init functions for the new world run.
 
 - World units are centimetres; time in game logic is milliseconds. Rendering and
   physics convert explicitly (`ToMeters`, `ToSeconds`). Do not mix them.
-- The logic update uses a variable delta clamped to 100 ms (a slow frame must not
-  teleport NPCs or skip triggers).
-- Physics runs at a fixed 60 Hz step, with at most 4 catch-up steps per frame.
+- Logic runs at a fixed 60 Hz through `Core.Timing.FixedStepRunner`. A frame may
+  execute at most four catch-up steps; excess time is discarded so a slow frame
+  cannot teleport NPCs or run triggers twice.
+- Rendering is uncapped (or vsync-limited) and independent of the logic rate.
+- Physics will use the same 60 Hz step; when it lands, it will consume the fixed
+  steps rather than raw frame time.
 - Animation time is milliseconds, matching MDS frame timing and script events.
 - Angles are radians inside math code, degrees only at the scripting/UI boundary.
 - Engine space is Y-up and right-handed, in centimetres. Gothic files are Y-up
@@ -138,17 +140,25 @@ VFS bytes -> ZenKit parse -> AssetConverter -> CPU asset (immutable) -> cache
 
 ## Error handling and diagnostics
 
-- `ILogSink` with console + `log.txt` sinks. Categories are namespaces.
+- `ILogSink` with console + `log.txt` sinks. The file lives in the application
+  data directory (`%LOCALAPPDATA%\VibeOpenGothic` by default, `--data-dir`
+  overrides). Debug logging is enabled with `-devmode`.
+- User errors (bad arguments, missing installation) are printed as one readable
+  line plus the log path and exit with code 1 or 2. They never print a stack
+  trace or open a modal dialog.
+- Unexpected exceptions are logged, written to a timestamped `crash-*.txt`
+  report in the data directory, flushed, and shown in a message box when the
+  process is interactive. `CrashHandler` also covers unobserved task exceptions.
 - Exceptions crossing a native boundary are caught in `Data`/`Assets`, wrapped in
   `AssetException` with the asset path, and logged with context.
 - Gameplay errors caused by broken scripts are logged and recovered from where
-  possible (the original tolerates many missing externals). Startup errors are
-  fatal and show a message box plus the log path.
+  possible (the original tolerates many missing externals).
 - `--probe` prints install version, mounted archives, file counts and resolves a
   set of known assets. `--dump-data` extracts converted meshes/textures for
   debugging (developer-only output, never committed).
 - Performance counters: frame time, update time, loaded asset count, draw calls,
-  triangle count, GC allocations per frame.
+  triangle count, GC allocations per frame. T0.2 shows FPS and frame time in the
+  window title.
 
 ## Coding conventions
 

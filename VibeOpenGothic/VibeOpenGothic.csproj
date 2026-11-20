@@ -5,6 +5,7 @@
     <TargetFramework>net8.0</TargetFramework>
     <RootNamespace>VibeOpenGothic</RootNamespace>
     <AssemblyName>VibeOpenGothic</AssemblyName>
+    <Version>0.0.1</Version>
     <RuntimeIdentifiers>win-x64;linux-x64;osx-x64</RuntimeIdentifiers>
   </PropertyGroup>
 

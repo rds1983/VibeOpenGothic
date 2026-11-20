@@ -4,7 +4,7 @@ C# reimplementation of **Gothic II: Night of the Raven**, ported from
 [OpenGothic](https://github.com/Try/OpenGothic). It runs the original game data;
 no game assets are bundled.
 
-**Status:** pre-alpha (repository bootstrap). The roadmap is in [TASKS.md](TASKS.md).
+**Status:** pre-alpha (application shell). The roadmap is in [TASKS.md](TASKS.md).
 
 Key decisions:
 
@@ -38,10 +38,14 @@ Key decisions:
 ```sh
 dotnet build VibeOpenGothic.slnx
 dotnet test VibeOpenGothic.slnx
+dotnet run --project VibeOpenGothic -- --help
+dotnet run --project VibeOpenGothic -- --probe -g "C:\Gothic II"
 dotnet run --project VibeOpenGothic -- -g "C:\Gothic II"
 ```
 
-The entry point is a stub until T0.2: running it prints a version line and exits.
+The current build opens a window with a solid background; Escape or Alt+F4
+exits. Settings and `log.txt` are written to
+`%LOCALAPPDATA%\VibeOpenGothic` (override with `--data-dir`).
 
 ## Repository layout
 

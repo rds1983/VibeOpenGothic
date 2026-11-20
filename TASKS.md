@@ -30,10 +30,11 @@ A task is done only when:
 
 ## Current focus
 
-**T0.2 - Application shell.** T0.1 is complete.
+**T0.3 - Install discovery and VFS.** T0.2 is complete.
 
-> T0.1 is complete: the solution builds, tests pass, and the entry point runs.
-> T0.2 adds the MonoGame host, command line, logging and settings.
+> T0.2 is complete: the app has a MonoGame host, CLI, logging, settings and
+> crash handling. T0.3 adds full install discovery, version detection and VFS
+> mounting, including case-insensitive directory names (`system` vs `System`).
 
 ## Milestone overview
 
@@ -63,7 +64,7 @@ A task is done only when:
   scaffold smoke tests that load every required package; README build commands
   work.
 
-- [ ] **T0.2 Application shell**
+- [x] **T0.2 Application shell** (2026-11-20)
   MonoGame `Game` subclass with a fixed-step logic loop and render loop; window,
   exit handling, frame-time counters. Command line parser with `--help`,
   `--version`, `--probe`, `--devmode`, `-g <path>`, `-game:`, `-window`, `-w`,
@@ -78,12 +79,14 @@ A task is done only when:
   Locate the installation (CLI, `VOG_GOTHIC_PATH`, settings, known paths),
   validate it, detect Gothic version, mount VDFs and `_work` with ZenKit using
   the ordering in Design/02, handle mods via `modfile.ini`, and normalize paths.
-  Add `--probe` output: version, archives, file counts, resolution of
-  `GOTHIC.DAT`, `newworld.zen`, a sample texture and model. Abstract the VFS
-  behind `IGameVfs` with an in-memory fake for tests.
+  Directory and file names must be resolved case-insensitively: a real Steam
+  install uses lowercase `system`, which currently only works on Windows because
+  NTFS ignores case. Add `--probe` output: version, archives, file counts,
+  resolution of `GOTHIC.DAT`, `newworld.zen`, a sample texture and model.
+  Abstract the VFS behind `IGameVfs` with an in-memory fake for tests.
   **Done when:** `--probe` succeeds on a real install; data-free unit tests cover
-  version detection from a fake install layout, mount ordering and mod file
-  filtering; no Gothic types leak outside `Data`.
+  version detection from a fake install layout (including `system`/`System`),
+  mount ordering and mod file filtering; no Gothic types leak outside `Data`.
 
 - [ ] **T0.4 CI and publishing**
   GitHub Actions workflow: restore, build Release (warnings as errors), run

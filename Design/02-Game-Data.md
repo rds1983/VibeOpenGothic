@@ -24,9 +24,13 @@ We never write into the installation. Settings, saves and logs live in
    Linux via Proton.
 5. Interactive folder picker (when a UI is available).
 
-Validation: the root must contain `System/Gothic.ini` and at least one non-empty
-`Data/*.vdf`. On failure, print the searched paths and exit with a readable
-error. `--probe` prints the resolved root without starting a game.
+The application shell (T0.2) already implements steps 1 and 3 and validates
+`System/Gothic.ini` plus the `Data` directory. T0.3 adds the environment
+variable, common-location discovery, version detection and VFS mounting.
+
+Validation target: the root must contain `System/Gothic.ini` and at least one
+non-empty `Data/*.vdf`. On failure, print the searched paths and exit with a
+readable error. `--probe` prints the resolved root without starting a game.
 
 ### Version detection
 

@@ -81,6 +81,7 @@ Rules:
 
 | Area | Tests |
 | --- | --- |
+| Startup/config | CLI parsing, settings round-trip, install validation, fixed-step accumulation, crash report formatting |
 | Coordinate conversion | Involution, point/normal/matrix/quaternion equivalence, winding/normal relationship, double-conversion detection |
 | Skinning conversion | Bind consistency, weight normalization, padding, bone limits, equivalence with the four-position formula |
 | Animation | Frame-to-time conversion, loop/transition timing, event firing, overlay blending |
