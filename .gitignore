@@ -1,0 +1,52 @@
+## Build output
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Ll]og/
+[Ll]ogs/
+*.user
+*.suo
+*.userprefs
+.vs/
+.vscode/
+.idea/
+*.DotSettings.user
+
+## Test / coverage
+[Tt]est[Rr]esult*/
+*.trx
+coverage*.xml
+coverage*.json
+coverage*.info
+*.coverage
+
+## NuGet
+*.nupkg
+*.snupkg
+project.lock.json
+.nuget/
+
+## Local tooling
+.vsconfig
+.dotnet/
+*.binlog
+
+## OS noise
+.DS_Store
+Thumbs.db
+desktop.ini
+
+## Game and runtime artifacts
+## Never commit Gothic game data, extracted assets, saves or logs.
+*.vdf
+*.mod
+*.zen
+*.dat
+*.sav
+log.txt
+crash*.dmp
+Gothic II/
+Artifacts/
