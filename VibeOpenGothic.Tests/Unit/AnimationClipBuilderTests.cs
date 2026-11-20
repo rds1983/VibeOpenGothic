@@ -1,3 +1,4 @@
+using DigitalRiseModel;
 using DigitalRiseModel.Animation;
 using Microsoft.Xna.Framework;
 using VibeOpenGothic.Assets.Animation;
@@ -28,20 +29,20 @@ public sealed class AnimationClipBuilderTests
 			});
 
 		using var model = BuildModel(source);
-		var clip = Assert.IsType<GothicAnimationClip>(model.FindClip("S_TEST"));
+		var clip = Assert.IsType<GothicAnimationClip>(model.Animations["S_TEST"]);
 
 		Assert.True(clip.IsTransition);
 		Assert.Equal(TimeSpan.FromMilliseconds(200), clip.Duration);
-		Assert.Equal(2, clip.Clip.Channels.Length);
-		Assert.All(clip.Clip.Channels, channel => Assert.Equal(2, channel.Keyframes.Length));
+		Assert.Equal(2, clip.Channels.Length);
+		Assert.All(clip.Channels, channel => Assert.Equal(2, channel.Keyframes.Length));
 
-		var instance = model.CreateInstance();
+		var instance = new DrModelInstance(model);
 		var controller = new AnimationController(instance);
-		controller.StartClip(clip.Clip, clip.PlaybackFlags);
+		controller.StartClip(clip, clip.PlaybackFlags);
 		controller.Time = TimeSpan.FromMilliseconds(50);
 
-		var rootIndex = model.MapSourceBoneIndex(0);
-		var childIndex = model.MapSourceBoneIndex(1);
+		var rootIndex = 0;
+		var childIndex = 1;
 		var expectedRoot = Matrix.CreateFromQuaternion(
 			CoordinateSystem.ToEngineAnimationQuaternion(halfYaw)) *
 			Matrix.CreateTranslation(5, 0, 0);
@@ -68,22 +69,22 @@ public sealed class AnimationClipBuilderTests
 			});
 
 		using var model = BuildModel(source);
-		var clip = Assert.IsType<GothicAnimationClip>(model.FindClip("S_TEST"));
+		var clip = Assert.IsType<GothicAnimationClip>(model.Animations["S_TEST"]);
 
 		Assert.True(clip.IsLoop);
 		Assert.True((clip.PlaybackFlags & DigitalRiseModel.Animation.AnimationFlags.Looped) != 0);
-		Assert.Equal(3, clip.Clip.Channels[0].Keyframes.Length);
-		Assert.Equal(TimeSpan.FromMilliseconds(200), clip.Clip.Channels[0].Keyframes[2].Time);
-		AssertNear(Vector3.Zero, clip.Clip.Channels[0].Keyframes[2].Pose.Translation);
+		Assert.Equal(3, clip.Channels[0].Keyframes.Length);
+		Assert.Equal(TimeSpan.FromMilliseconds(200), clip.Channels[0].Keyframes[2].Time);
+		AssertNear(Vector3.Zero, clip.Channels[0].Keyframes[2].Pose.Translation);
 
-		var instance = model.CreateInstance();
+		var instance = new DrModelInstance(model);
 		var controller = new AnimationController(instance);
-		controller.StartClip(clip.Clip, clip.PlaybackFlags);
+		controller.StartClip(clip, clip.PlaybackFlags);
 		controller.Time = TimeSpan.FromMilliseconds(150);
 
 		AssertNear(
 			new Vector3(5, 0, 0),
-			instance.GetBoneLocalTransform(model.MapSourceBoneIndex(0)).Translation);
+			instance.GetBoneLocalTransform(0).Translation);
 	}
 
 	[Fact]
@@ -101,11 +102,11 @@ public sealed class AnimationClipBuilderTests
 			});
 
 		using var model = BuildModel(source);
-		var clip = Assert.IsType<GothicAnimationClip>(model.FindClip("S_TEST"));
+		var clip = Assert.IsType<GothicAnimationClip>(model.Animations["S_TEST"]);
 
 		Assert.False(clip.IsLoop);
 		Assert.True(clip.IsTransition);
-		Assert.Equal(2, clip.Clip.Channels[0].Keyframes.Length);
+		Assert.Equal(2, clip.Channels[0].Keyframes.Length);
 	}
 
 	[Fact]
@@ -126,7 +127,7 @@ public sealed class AnimationClipBuilderTests
 			});
 
 		using var model = BuildModel(source);
-		var clip = Assert.IsType<GothicAnimationClip>(model.FindClip("S_TEST"));
+		var clip = Assert.IsType<GothicAnimationClip>(model.Animations["S_TEST"]);
 
 		var evt = Assert.Single(clip.Events);
 		Assert.Equal(GothicAnimationEventKind.Tag, evt.Kind);
@@ -205,11 +206,11 @@ public sealed class AnimationClipBuilderTests
 		Assert.Equal(3, aliasClip.Layer);
 		Assert.Equal(TimeSpan.FromMilliseconds(200), aliasClip.BlendIn);
 		Assert.Equal(TimeSpan.FromMilliseconds(300), aliasClip.BlendOut);
-		Assert.Same(baseClip.Clip.Channels, aliasClip.Clip.Channels);
+		Assert.Same(baseClip.Channels, aliasClip.Channels);
 		Assert.Empty(warnings);
 	}
 
-	private static RuntimeModel BuildModel(AnimationSource source)
+	private static DrModel BuildModel(AnimationSource source)
 	{
 		var skeleton = SkinSkeletonBuilder.Build(
 			new[]
@@ -223,7 +224,7 @@ public sealed class AnimationClipBuilderTests
 			Array.Empty<AnimationAliasSource>(),
 			Array.Empty<string>(),
 			Array.Empty<string>());
-		return RuntimeModelBuilder.Build("test", skeleton, animations).Model;
+		return GothicModelBuilder.Build("test", skeleton, animations).Model;
 	}
 
 	private static AnimationSource Source(

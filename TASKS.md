@@ -30,12 +30,12 @@ A task is done only when:
 
 ## Current focus
 
-**T1.5 - Renderer bring-up.** T1.4 is complete.
+**T1.5 - Renderer bring-up.** T1.4a is complete.
 
-> T1.4 is complete: MDH skeletons map to DigitalRiseModel bones and skins, MDS
-> animations convert to clips with frame-to-ms timing and engine-space keyframes,
-> and `--check-animations` poses every real clip without NaNs. T1.5 opens a
-> MonoGame window and validates the converted data with stock effects.
+> T1.4a returns a plain `DrModel` from model loading; Gothic clip metadata lives
+> on `GothicAnimationClip : AnimationClip` inside `DrModel.Animations`. T1.5 opens
+> a MonoGame window and validates the converted meshes, textures and animations
+> with stock effects.
 
 ## Milestone overview
 
@@ -163,6 +163,19 @@ A task is done only when:
   Result: 117 MDS scripts, 5,783 clips, 1,852 aliases, 11,566 pose evaluations,
   0 non-finite transforms, 0 failures. See Design/03.
 
+- [x] **T1.4a Simplify the runtime model around DrModel** (2026-11-20)
+  OpenGothicSharp shows that a loaded skinned model can be returned as `DrModel`
+  directly. Remove `RuntimeModel`; keep the load-time bone mapping only in the
+  builder result. Move Gothic clip metadata (loop/transition, next, blend,
+  events, root motion) onto `GothicAnimationClip : AnimationClip` so
+  `DrModel.Animations` is the single clip store. Build per-mesh skins in T1.7
+  from `DrModel` bones, as OpenGothicSharp does, instead of holding a model-level
+  skin. Update `--check-animations`, tests and Design/03.
+  **Done when:** `--check-animations` and unit tests pass with `DrModel` as the
+  returned asset; no behavior regression in clip conversion or pose evaluation.
+  Result: runtime asset is `DrModel`; 217 tests pass; `--check-animations` still
+  reports 0 non-finite transforms and 0 failures. See Design/03.
+
 - [ ] **T1.5 Renderer bring-up**
   MonoGame window, `GraphicsDevice` lifecycle, right-handed `GothicCamera`, depth
   buffer, `BasicEffect` test scene (grid, textured cube, unlit normals debug),
@@ -186,7 +199,9 @@ A task is done only when:
 - [ ] **T1.7 Skinned VOBs and NPCs**
   Spawn model VOBs, build `DrModel`s from converted data, draw with
   `SkinnedEffect`, play the default idle animation, and support attachments
-  (weapon/armor) by node name. Handle the 72-bone limit as documented.
+  (weapon/armor) by node name. Build one `DrSkin` per mesh from the mesh's node
+  list and the DrModel absolute bind transforms (T1.4a), which also handles the
+  72-bone limit by construction.
   **Done when:** NPCs from a real world are visible and animate (screenshot at
   two timestamps); a synthetic model over 72 bones is remapped or reported
   without crashing.

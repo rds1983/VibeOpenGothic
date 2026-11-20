@@ -105,7 +105,6 @@ public static class AnimationClipBuilder
 			return null;
 		}
 
-		var clip = new AnimationClip(name, FrameToTime(source.FrameCount, source.Fps), channels.ToArray());
 		var events = new GothicAnimationEvent[source.Events.Count];
 		for (var index = 0; index < source.Events.Count; index++)
 		{
@@ -122,7 +121,8 @@ public static class AnimationClipBuilder
 			name,
 			source.Name,
 			source.DataName,
-			clip,
+			FrameToTime(source.FrameCount, source.Fps),
+			channels.ToArray(),
 			source.FrameCount,
 			source.Fps,
 			source.FirstFrame,
@@ -160,13 +160,12 @@ public static class AnimationClipBuilder
 		var isLoop = !baseClip.HasComboWindow && next == name;
 
 		// Channels are already remapped; share them with the alias clip.
-		var clip = new AnimationClip(name, baseClip.Duration, baseClip.Clip.Channels);
-
 		return new GothicAnimationClip(
 			name,
 			alias.Name,
 			baseClip.DataName,
-			clip,
+			baseClip.Duration,
+			baseClip.Channels,
 			baseClip.FrameCount,
 			baseClip.Fps,
 			baseClip.FirstFrame,

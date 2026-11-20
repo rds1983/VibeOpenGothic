@@ -5,14 +5,14 @@ using VibeOpenGothic.Assets.Skins;
 namespace VibeOpenGothic.Assets.Animation;
 
 /// <summary>
-/// Builds DigitalRiseModel bones, one skin and animation clips from the
-/// converted MDH skeleton and MDS/MAN animation sources. DrModel assigns bone
-/// indices by depth-first traversal; Gothic MDH data is already in that order,
-/// but a mapping is exposed for mods that are not.
+/// Builds a DigitalRiseModel skeleton and clips from the converted MDH skeleton
+/// and MDS/MAN animation sources. The returned asset is a plain <see cref="DrModel"/>;
+/// the source bone order and index maps are only needed while meshes and skins
+/// are created.
 /// </summary>
-public static class RuntimeModelBuilder
+public static class GothicModelBuilder
 {
-	public static RuntimeModelBuildResult Build(
+	public static GothicModelBuildResult Build(
 		string name,
 		SkinSkeleton skeleton,
 		AnimationLoadResult animations)
@@ -52,10 +52,6 @@ public static class RuntimeModelBuilder
 					"treating it as a root.");
 				parent = -1;
 			}
-			else if (parent < 0)
-			{
-				parent = -1;
-			}
 
 			parents[index] = parent;
 		}
@@ -89,14 +85,13 @@ public static class RuntimeModelBuilder
 		}
 
 		DrModelBone root;
-		DrModelBone? syntheticRoot = null;
 		if (roots.Count == 1)
 		{
 			root = bones[roots[0]];
 		}
 		else
 		{
-			syntheticRoot = new DrModelBone("<ROOT>", null);
+			var syntheticRoot = new DrModelBone("<ROOT>", null);
 			syntheticRoot.Children = roots.Select(index => bones[index]).ToArray();
 			root = syntheticRoot;
 			warnings.Add($"Skeleton has {roots.Count} roots; added a synthetic root bone.");
@@ -116,7 +111,7 @@ public static class RuntimeModelBuilder
 		{
 			warnings.Add(
 				"MDH bone order is not depth-first; mesh weights and clip channels " +
-				"use SourceToDrBoneIndex.");
+				"use the source-to-DrModel bone map.");
 		}
 
 		var drToSource = Enumerable.Repeat(-1, model.Bones.Length).ToArray();
@@ -125,23 +120,8 @@ public static class RuntimeModelBuilder
 			drToSource[sourceToDr[index]] = index;
 		}
 
-		var joints = new DrSkinJoint[boneCount];
-		for (var index = 0; index < boneCount; index++)
-		{
-			joints[index] = new DrSkinJoint(
-				bones[index],
-				skeleton.Bones[index].InverseBindGlobal);
-		}
-
-		var skin = new DrSkin(0, joints)
-		{
-			Name = name,
-		};
-
 		var clips = new Dictionary<string, GothicAnimationClip>(StringComparer.OrdinalIgnoreCase);
 		var baseClips = new Dictionary<string, GothicAnimationClip>(StringComparer.OrdinalIgnoreCase);
-		var modelAnimations = new Dictionary<string, DigitalRiseModel.Animation.AnimationClip>(
-			StringComparer.OrdinalIgnoreCase);
 
 		foreach (var source in animations.Animations)
 		{
@@ -151,7 +131,7 @@ public static class RuntimeModelBuilder
 				continue;
 			}
 
-			AddClip(clip, clips, baseClips, modelAnimations, warnings, isAlias: false);
+			AddClip(clip, clips, baseClips, warnings, isAlias: false);
 		}
 
 		foreach (var alias in animations.Aliases)
@@ -169,22 +149,24 @@ public static class RuntimeModelBuilder
 				continue;
 			}
 
-			AddClip(clip, clips, baseClips, modelAnimations, warnings, isAlias: true);
+			AddClip(clip, clips, baseClips, warnings, isAlias: true);
+		}
+
+		var modelAnimations = new Dictionary<string, DigitalRiseModel.Animation.AnimationClip>(
+			StringComparer.OrdinalIgnoreCase);
+		foreach (var pair in clips)
+		{
+			modelAnimations[pair.Key] = pair.Value;
 		}
 
 		model.Animations = modelAnimations;
 
-		var runtime = new RuntimeModel(
-			name,
+		return new GothicModelBuildResult(
 			model,
-			skeleton,
 			bones,
 			sourceToDr,
 			drToSource,
-			skin,
-			clips);
-
-		return new RuntimeModelBuildResult(runtime, warnings);
+			warnings);
 	}
 
 	private static void BreakCycles(int[] parents, SkinSkeleton skeleton, ICollection<string> warnings)
@@ -244,7 +226,6 @@ public static class RuntimeModelBuilder
 		GothicAnimationClip clip,
 		Dictionary<string, GothicAnimationClip> clips,
 		Dictionary<string, GothicAnimationClip> baseClips,
-		Dictionary<string, DigitalRiseModel.Animation.AnimationClip> modelAnimations,
 		ICollection<string> warnings,
 		bool isAlias)
 	{
@@ -262,7 +243,6 @@ public static class RuntimeModelBuilder
 		{
 			if (clips.TryAdd(key, value))
 			{
-				modelAnimations[key] = value.Clip;
 				if (!isAlias)
 				{
 					baseClips.TryAdd(key, value);

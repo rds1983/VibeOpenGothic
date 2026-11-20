@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using DigitalRiseModel;
 using DigitalRiseModel.Animation;
 using Microsoft.Xna.Framework;
 using VibeOpenGothic.Data.Installs;
@@ -66,11 +67,14 @@ public static class AnimationCheckTool
 				}
 
 				var model = loaded.Model;
-				var clips = model.Clips.Values.Distinct().ToList();
+				var clips = model.Animations.Values
+					.Distinct()
+					.OfType<GothicAnimationClip>()
+					.ToList();
 				var scriptKeyframes = 0;
 				foreach (var clip in clips)
 				{
-					foreach (var channel in clip.Clip.Channels)
+					foreach (var channel in clip.Channels)
 					{
 						scriptKeyframes += channel.Keyframes.Length;
 					}
@@ -80,13 +84,13 @@ public static class AnimationCheckTool
 				loopCount += clips.Count(clip => clip.IsLoop);
 				aliasCount += loaded.Animations.Aliases.Count;
 				keyframeCount += scriptKeyframes;
-				maxBones = Math.Max(maxBones, model.Model.Bones.Length);
-				if (model.Model.Bones.Length > 72)
+				maxBones = Math.Max(maxBones, model.Bones.Length);
+				if (model.Bones.Length > 72)
 				{
 					overBoneLimit++;
 				}
 
-				var instance = model.CreateInstance();
+				var instance = new DrModelInstance(model);
 				var controller = new AnimationController(instance);
 				var scriptPoses = 0;
 				var scriptNonFinite = 0;
@@ -98,14 +102,14 @@ public static class AnimationCheckTool
 						continue;
 					}
 
-					controller.StartClip(clip.Clip, clip.PlaybackFlags);
+					controller.StartClip(clip, clip.PlaybackFlags);
 					EvaluateAt(TimeSpan.FromTicks(clip.Duration.Ticks / 2));
 					EvaluateAt(TimeSpan.Zero);
 
 					void EvaluateAt(TimeSpan time)
 					{
 						controller.Time = time;
-						for (var bone = 0; bone < model.Model.Bones.Length; bone++)
+						for (var bone = 0; bone < model.Bones.Length; bone++)
 						{
 							var transform = instance.GetBoneGlobalTransform(bone);
 							if (!IsFinite(transform))
@@ -125,7 +129,7 @@ public static class AnimationCheckTool
 				{
 					output(
 						$"{file.Path}: {clips.Count} animation(s), " +
-						$"{scriptKeyframes} keys, {model.Model.Bones.Length} bones, " +
+						$"{scriptKeyframes} keys, {model.Bones.Length} bones, " +
 						$"{scriptPoses} pose(s), {scriptNonFinite} non-finite");
 				}
 

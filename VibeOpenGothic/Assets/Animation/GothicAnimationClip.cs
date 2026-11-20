@@ -7,15 +7,17 @@ namespace VibeOpenGothic.Assets.Animation;
 /// <summary>
 /// A DigitalRiseModel clip plus the Gothic script metadata needed by the
 /// animation solver: loop/transition state, next animation, blend times, events
-/// and root motion. Names are normalized to upper case for lookup.
+/// and root motion. Stored directly in <see cref="DigitalRiseModel.DrModel.Animations"/>,
+/// so the runtime asset remains a plain <c>DrModel</c>.
 /// </summary>
-public sealed class GothicAnimationClip
+public sealed class GothicAnimationClip : AnimationClip
 {
 	public GothicAnimationClip(
 		string name,
 		string sourceName,
 		string dataName,
-		AnimationClip clip,
+		TimeSpan duration,
+		AnimationChannel[] channels,
 		int frameCount,
 		float fps,
 		int firstFrame,
@@ -31,15 +33,13 @@ public sealed class GothicAnimationClip
 		Vector3 rootMotionDelta,
 		bool hasRootMotion,
 		IReadOnlyList<GothicAnimationEvent> events)
+		: base(name, duration, channels)
 	{
-		ArgumentException.ThrowIfNullOrWhiteSpace(name);
-		ArgumentNullException.ThrowIfNull(clip);
+		ArgumentException.ThrowIfNullOrWhiteSpace(sourceName);
 		ArgumentNullException.ThrowIfNull(events);
 
-		Name = name;
 		SourceName = sourceName;
 		DataName = dataName;
-		Clip = clip;
 		FrameCount = frameCount;
 		Fps = fps;
 		FirstFrame = firstFrame;
@@ -70,15 +70,9 @@ public sealed class GothicAnimationClip
 		PlaybackFlags = playback;
 	}
 
-	public string Name { get; }
-
 	public string SourceName { get; }
 
 	public string DataName { get; }
-
-	public AnimationClip Clip { get; }
-
-	public TimeSpan Duration => Clip.Duration;
 
 	public int FrameCount { get; }
 

@@ -53,7 +53,7 @@ public static class ZenKitAnimationModelLoader
 			nodes,
 			new Vector3(root.X, root.Y, root.Z));
 		var animations = ZenKitAnimationAdapter.Load(vfs, mdsPath, script);
-		var build = RuntimeModelBuilder.Build(
+		var build = GothicModelBuilder.Build(
 			Path.GetFileNameWithoutExtension(mdsPath),
 			skeleton,
 			animations);

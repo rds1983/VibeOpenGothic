@@ -242,21 +242,31 @@ space and let the GPU skin them.
 
 Build the runtime skeleton from `MDH`:
 
-- One `DrModelBone` per hierarchy node, in MDH order. `DefaultPose` is the
-  SRT decomposition of the converted local bind transform; the MDH root
-  translation is already included, exactly as in the skin bake.
+- The loaded asset is a plain `DrModel`. `GothicModelBuilder` returns a
+  load-time `GothicModelBuildResult` with `SourceBones`, `SourceToDrBoneIndex`
+  and `DrToSourceBoneIndex`; the maps are only needed while meshes and skins are
+  created and are not a runtime wrapper.
+- One `DrModelBone` per hierarchy node in MDH order. `DefaultPose` is the SRT
+  decomposition of the converted local bind transform; the MDH root translation
+  is already included, exactly as in the skin bake.
 - `DrModel` assigns indices by depth-first traversal. All 117 shipped G2 NotR
   MDH files are already pre-order depth-first, so indices match MDH indices.
-  `RuntimeModel.SourceToDrBoneIndex` and `DrToSourceBoneIndex` expose the map so
-  modded skeletons that are not ordered this way still work; mesh `BlendIndices`
-  must be remapped through it when buffers are built (T1.7).
-- One `DrSkin` contains a `DrSkinJoint(bone, inverseBind)` for every source
-  bone. `DrModelInstance.GetSkinTransforms` returns
-  `inverseBind * world`, which is what `SkinnedEffect` expects for row-vector
-  positions (`p * inverseBind * world`). Reducing the skin to the used bones and
-  the 72-bone limit belongs to T1.7.
+  Modded skeletons that are not ordered this way use the builder maps; mesh
+  `BlendIndices` are remapped through them when buffers are built (T1.7).
+- Skins are per mesh, like OpenGothicSharp: each mesh's `SoftSkinMesh.Nodes`
+  becomes a compact joint list, `DrSkinJoint` uses
+  `Matrix.Invert(boneAbsoluteBind)`, and vertex `BlendIndices` index that joint
+  list. This reduces the joint set to the bones the mesh actually uses; a mesh
+  that still exceeds 72 needs the split/remap described above. No model-level
+  `DrSkin` is retained; T1.7 creates it when mesh parts exist.
 - Multiple roots get a synthetic `<ROOT>` bone. Cycles or invalid parent links
   are broken with a warning and never hang the traversal.
+
+This follows OpenGothicSharp's shape: load directly into `DrModel`, return it,
+and build per-mesh skins. The deliberate differences are that we keep Gothic
+clip metadata in `GothicAnimationClip : AnimationClip` and use the MAN FPS;
+OpenGothicSharp stores only plain `AnimationClip`s and passes loop flags at the
+call site, which is not enough for scripts, events or root motion.
 
 ### Clips
 
@@ -281,15 +291,15 @@ Each MDS animation has a MAN file named `<mds stem>-<animation name>.MAN`:
   Looped clips get an extra key at `duration` equal to frame zero so the last
   interval interpolates back to the start. `AnimationFlags.Looped` and
   `PlayBackwards` are derived from this metadata.
-- `GothicAnimationClip` keeps the upper-case lookup name, original source/data
-  names, `next`, layer, flags, blend in/out, first/last frame, event markers,
-  root-motion delta and a `HasRootMotion` flag. `aniAlias` entries reuse the
-  base clip's channels under the alias name. `aniComb` combo expansions are
-  deferred to the combat task.
-- `RuntimeModel.Clips` and `DrModel.Animations` use a case-insensitive
-  dictionary, so both `S_RUN` and `s_Run` resolve. `RuntimeModel.FindClip`
-  exposes the metadata; `AnimationController.StartClip` plays the contained
-  `AnimationClip` with `GothicAnimationClip.PlaybackFlags`.
+- `GothicAnimationClip : AnimationClip` keeps the upper-case lookup name,
+  original source/data names, `next`, layer, flags, blend in/out, first/last
+  frame, event markers, root-motion delta and a `HasRootMotion` flag. It is
+  stored directly in `DrModel.Animations`; no separate clip dictionary or model
+  wrapper is needed. `aniAlias` entries reuse the base clip's channels under the
+  alias name. `aniComb` combo expansions are deferred to the combat task.
+- `DrModel.Animations` uses a case-insensitive dictionary, so both `S_RUN` and
+  `s_Run` resolve. `AnimationController.StartClip` accepts the clip directly;
+  `GothicAnimationClip.PlaybackFlags` supplies loop/reverse flags.
 
 Events are stored with their frame, converted time and name (tag type,
 sound/particle name, morph animation, camera tremor fields), but are not fired
