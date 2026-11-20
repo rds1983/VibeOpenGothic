@@ -30,11 +30,11 @@ A task is done only when:
 
 ## Current focus
 
-**T1.0 - LHS-to-RHS conversion layer.** T0.3 is complete.
+**T1.1 - Mesh conversion core.** T1.0 is complete.
 
-> T0.3 is complete: installs are discovered, versions detected and game data is
-> mounted behind `IGameVfs`. T1.0 establishes the coordinate conversion layer
-> before mesh and model data are converted.
+> T1.0 is complete: all Gothic-space geometry can be converted exactly once
+> through `Core.CoordinateSystem`. T1.1 applies it to static/world meshes and
+> produces the first engine `MeshData`.
 
 ## Milestone overview
 
@@ -99,7 +99,7 @@ A task is done only when:
 
 ## M1 - Data and static world
 
-- [ ] **T1.0 LHS-to-RHS conversion layer**
+- [x] **T1.0 LHS-to-RHS conversion layer** (2026-11-20)
   Implement `Core.CoordinateSystem` for the Gothic (left-handed, Y-up) to engine
   (right-handed, Y-up) conversion: points, directions, normals, matrices,
   quaternions, scalar yaw and triangle winding. It is a reflection across the XY

@@ -61,6 +61,19 @@ cross-product orientation. Reversing the index order restores an outward normal
 equal to the reflected normal. If a model looks inside-out, one of these two
 steps is missing.
 
+Implementation: `Core.CoordinateSystem` exposes `ToEnginePoint`,
+`ToEngineDirection`, `ToEngineNormal`, `ToEngineYaw`, `ToEngineMatrix`,
+`ToEngineQuaternion`, `ToEngineBounds` and the winding helpers. The matrix
+conversion follows MonoGame's row-vector convention (`Reflection * matrix *
+Reflection`, including the translation row). Unit tests cover the involution,
+matrix/quaternion equivalence, yaw/direction equivalence, bounds and the
+normal/winding relationship.
+
+Because the conversion is its own inverse, accidentally converting twice leaves
+data in Gothic space and is invisible in the values alone. Loaders must call the
+helper exactly once; the involution tests pin this contract, and an asymmetric
+textured asset catches visual regressions.
+
 ## The Gothic skinning scheme
 
 In a `.MDM` skinned mesh, positions are not ordinary vertices. Each position
