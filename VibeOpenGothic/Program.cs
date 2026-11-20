@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using VibeOpenGothic.App;
+using VibeOpenGothic.Assets.Animation;
 using VibeOpenGothic.Assets.Meshes;
 using VibeOpenGothic.Assets.Skins;
 using VibeOpenGothic.Assets.Textures;
@@ -165,6 +166,11 @@ internal static class Program
 			if (options.CheckModels)
 			{
 				return ModelCheckTool.Run(install, vfs);
+			}
+
+			if (options.CheckAnimations)
+			{
+				return AnimationCheckTool.Run(install, vfs);
 			}
 
 			if (!vfs.FileExists(install.DefaultGameDatName))

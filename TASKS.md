@@ -30,12 +30,12 @@ A task is done only when:
 
 ## Current focus
 
-**T1.4 - Skeletons and animation clips.** T1.3 is complete.
+**T1.5 - Renderer bring-up.** T1.4 is complete.
 
-> T1.3 is complete: Gothic's four-position skinned meshes bake to standard LBS,
-> MDH/MDM names resolve from the MDS, `--check-models` validates a real install,
-> and the results are documented in Design/03. T1.4 builds the runtime skeleton
-> and animation clips on top of the converted bind data.
+> T1.4 is complete: MDH skeletons map to DigitalRiseModel bones and skins, MDS
+> animations convert to clips with frame-to-ms timing and engine-space keyframes,
+> and `--check-animations` poses every real clip without NaNs. T1.5 opens a
+> MonoGame window and validates the converted data with stock effects.
 
 ## Milestone overview
 
@@ -151,7 +151,7 @@ A task is done only when:
   Result: 117 MDS / 171 skinned meshes, 0 failures; primary bind inconsistency
   <= 2.713 cm raw / 1.569 cm weighted. See Design/03.
 
-- [ ] **T1.4 Skeletons and animation clips**
+- [x] **T1.4 Skeletons and animation clips** (2026-11-20)
   Convert MDH hierarchies and MDS animations to DigitalRiseModel bones, skin
   joints and `AnimationClip`s (translation + rotation channels, frame-to-ms
   timing), converting every keyframe to engine RHS. Preserve node order and
@@ -160,6 +160,8 @@ A task is done only when:
   **Done when:** a unit test evaluates a two-bone clip at known times, including
   yaw sign after conversion; attachment node lookup works; a real NPC can be
   posed at frame 0 and mid-animation without NaNs.
+  Result: 117 MDS scripts, 5,783 clips, 1,852 aliases, 11,566 pose evaluations,
+  0 non-finite transforms, 0 failures. See Design/03.
 
 - [ ] **T1.5 Renderer bring-up**
   MonoGame window, `GraphicsDevice` lifecycle, right-handed `GothicCamera`, depth
@@ -190,12 +192,12 @@ A task is done only when:
   without crashing.
 
 - [ ] **T1.8 Data diagnostics**
-  `--check-meshes` (T1.1), `--check-textures` (T1.2) and `--check-models` (T1.3)
-  cover world meshes, textures and skinned models. Extend the suite with
-  `--check-assets` / `--dump-data`: walk models, textures and scripts; report
-  cross-references (animations, attachments, missing VOB assets), degenerate
-  triangles and unsupported features as a summary and optional JSON. Never write
-  into the installation.
+  `--check-meshes` (T1.1), `--check-textures` (T1.2), `--check-models` (T1.3)
+  and `--check-animations` (T1.4) cover world meshes, textures, skinned models
+  and clips. Extend the suite with `--check-assets` / `--dump-data`: walk models,
+  textures and scripts; report cross-references (animations, attachments, missing
+  VOB assets), degenerate triangles and unsupported features as a summary and
+  optional JSON. Never write into the installation.
   **Done when:** the commands run on a real install and their output is used in
   the task evidence; docs describe the commands and their exit codes.
 
@@ -227,7 +229,9 @@ A task is done only when:
 - [ ] **T2.3 Waynet and AI movement**
   Convert the waynet to a graph, implement A* pathfinding, waypoint following,
   `AI_GotoWaypoint`-style commands, turn-to-direction, and animation selection
-  for walk/run. Handle free points and underwater flags.
+  for walk/run. Handle free points and underwater flags. Consume the
+  `RootMotionDelta` recorded by T1.4 in the movement controller so animation and
+  movement do not move an NPC twice.
   **Done when:** an NPC walks a multi-waypoint path around a corner in a real
   world; headless graph tests cover pathfinding and unreachable targets.
 
@@ -315,7 +319,9 @@ A task is done only when:
 
 - [ ] **T3.7 Combat**
   Melee hit windows from animation events, damage/hit chance from script data,
-  blocking, stagger, ranged projectiles, death, loot and XP.
+  blocking, stagger, ranged projectiles, death, loot and XP. Expand `aniComb`
+  combo-window clips from T1.4 here, and fire the stored hit/parry/event
+  markers from the animation layer.
   **Done when:** the player can kill a weak monster and be killed; damage numbers
   match a scripted reference scenario within tolerance; seeded tests are
   deterministic.

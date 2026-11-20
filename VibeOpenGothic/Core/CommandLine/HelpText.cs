@@ -23,6 +23,7 @@ public static class HelpText
           --check-meshes     Convert every ZEN world mesh and report counts
           --check-textures   Decode a sample of TEX files and report dimensions
           --check-models     Bake every MDS model and report skin diagnostics
+          --check-animations Load every MDS animation and pose it
           --help             Show this help
           --version          Show version information
 

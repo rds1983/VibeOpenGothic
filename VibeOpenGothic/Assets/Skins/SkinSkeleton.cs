@@ -5,6 +5,7 @@ namespace VibeOpenGothic.Assets.Skins;
 public sealed record SkinBone(
 	string Name,
 	int ParentIndex,
+	Matrix Local,
 	Matrix BindGlobal,
 	Matrix InverseBindGlobal);
 
@@ -19,13 +20,16 @@ public sealed class SkinSkeleton
 		Warnings = warnings;
 
 		var bindGlobals = new Matrix[bones.Count];
+		var locals = new Matrix[bones.Count];
 		var inverseBindGlobals = new Matrix[bones.Count];
 		for (var index = 0; index < bones.Count; index++)
 		{
+			locals[index] = bones[index].Local;
 			bindGlobals[index] = bones[index].BindGlobal;
 			inverseBindGlobals[index] = bones[index].InverseBindGlobal;
 		}
 
+		Locals = locals;
 		BindGlobals = bindGlobals;
 		InverseBindGlobals = inverseBindGlobals;
 	}
@@ -33,6 +37,8 @@ public sealed class SkinSkeleton
 	public IReadOnlyList<SkinBone> Bones { get; }
 
 	public int BoneCount => Bones.Count;
+
+	public IReadOnlyList<Matrix> Locals { get; }
 
 	public IReadOnlyList<Matrix> BindGlobals { get; }
 

@@ -19,6 +19,7 @@ public sealed class SkinSkeletonTests
 		var skeleton = SkinSkeletonBuilder.Build(nodes, new Vector3(0, 0, 5));
 
 		Assert.Equal(1, skeleton.BoneCount);
+		AssertNear(new Vector3(0, 0, -5), skeleton.Bones[0].Local.Translation);
 		AssertNear(new Vector3(0, 0, -5), skeleton.Bones[0].BindGlobal.Translation);
 		AssertNear(new Vector3(0, 0, 5), skeleton.Bones[0].InverseBindGlobal.Translation);
 	}

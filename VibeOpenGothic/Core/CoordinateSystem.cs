@@ -72,6 +72,23 @@ public static class CoordinateSystem
 	}
 
 	/// <summary>
+	/// Converts an animation-sample quaternion. Gothic stores animation rotations
+	/// for column-vector matrices, which is the transpose of MonoGame's row-vector
+	/// quaternion convention. Converting a point and then the sample rotation is
+	/// equivalent to reflecting the transposed rotation: <c>(x, y, z, w)</c>
+	/// becomes <c>(x, y, -z, w)</c> after normalization.
+	/// </summary>
+	public static Quaternion ToEngineAnimationQuaternion(Quaternion gothicQuaternion)
+	{
+		var normalized = Quaternion.Normalize(gothicQuaternion);
+		return new Quaternion(
+			normalized.X,
+			normalized.Y,
+			-normalized.Z,
+			normalized.W);
+	}
+
+	/// <summary>
 	/// Converts an axis-aligned box. X/Y are unchanged; the Z range is negated
 	/// and its minimum/maximum swap.
 	/// </summary>

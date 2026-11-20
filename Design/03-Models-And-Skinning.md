@@ -51,6 +51,7 @@ so it is done exactly once, at load, through `Core.CoordinateSystem`:
 | Matrix (linear part) | `R' = M * R * M` (M is symmetric and self-inverse) |
 | Matrix translation | `t' = M * t` |
 | Quaternion | Conjugate by M: axis `n` becomes `M*n`, angle negates; for `(x,y,z,w)` this is `(-x, -y, z, w)` up to sign |
+| Animation sample quaternion | Column-vector convention; use `(x, y, -z, w)` after normalization (`ToEngineAnimationQuaternion`) |
 | Scalar yaw | Negate (a rotation about Y maps to the opposite angle) |
 
 Rules:
@@ -237,22 +238,63 @@ space and let the GPU skin them.
 
 ## Skeleton and animation
 
-Build the runtime skeleton from `MDH` and the clips from `MDS`:
+### Runtime skeleton
 
-- One `DrModelBone` per hierarchy node, preserving order and parent links. The
-  bone index must match the index used by the mesh weights and animation
-  channels.
-- `DrSkinJoint(bone, inverseBind)` for every deforming bone.
-- One `AnimationClip` per MDS animation. Each channel targets a bone index and
-  holds translation and rotation keyframes (scale is 1). Convert frame numbers
-  to milliseconds using the animation's FPS; `TimeSpan` is used by
-  DigitalRiseModel.
-- Store the original frame numbers, event frame indices and the loop/transition
-  flag alongside the clip. Script events (`MdsEventTag`, sound, particle,
-  morph) belong to our animation layer, not to DigitalRiseModel.
+Build the runtime skeleton from `MDH`:
 
-`DrModelInstance.GetSkinTransforms(skinIndex)` produces the bone matrices for
-`SkinnedEffect.SetBoneTransforms`.
+- One `DrModelBone` per hierarchy node, in MDH order. `DefaultPose` is the
+  SRT decomposition of the converted local bind transform; the MDH root
+  translation is already included, exactly as in the skin bake.
+- `DrModel` assigns indices by depth-first traversal. All 117 shipped G2 NotR
+  MDH files are already pre-order depth-first, so indices match MDH indices.
+  `RuntimeModel.SourceToDrBoneIndex` and `DrToSourceBoneIndex` expose the map so
+  modded skeletons that are not ordered this way still work; mesh `BlendIndices`
+  must be remapped through it when buffers are built (T1.7).
+- One `DrSkin` contains a `DrSkinJoint(bone, inverseBind)` for every source
+  bone. `DrModelInstance.GetSkinTransforms` returns
+  `inverseBind * world`, which is what `SkinnedEffect` expects for row-vector
+  positions (`p * inverseBind * world`). Reducing the skin to the used bones and
+  the 72-bone limit belongs to T1.7.
+- Multiple roots get a synthetic `<ROOT>` bone. Cycles or invalid parent links
+  are broken with a warning and never hang the traversal.
+
+### Clips
+
+Each MDS animation has a MAN file named `<mds stem>-<animation name>.MAN`:
+
+- The MDS supplies `next`, layer, blend in/out, flags, direction and the
+  original first/last frame. The MAN supplies the sample table and its own FPS.
+  Use the MAN FPS, matching `Animation::Sequence` in OpenGothic; the MDS FPS is
+  informational.
+- MAN samples are absolute local position + rotation per animated node, not
+  deltas. Nodes that are absent keep the bind pose from the MDH.
+- Key time is `frame * 1000 / fps` milliseconds and duration is
+  `frameCount * 1000 / fps`. Translation is interpolated linearly and rotation
+  spherically, matching the original `mix`/`slerp`.
+- Animation quaternions use a column-vector rotation convention. Convert them
+  with `CoordinateSystem.ToEngineAnimationQuaternion`, which reflects the
+  transposed rotation: `(x, y, z, w)` becomes `(x, y, -z, w)` after
+  normalization. This is different from `ToEngineQuaternion` (used for ordinary
+  transforms) and is pinned by tests against the MDH bind rotation.
+- A clip loops when `next` equals its name or MAN name, case-insensitively,
+  unless it has a `ComboWindow` event; everything else is a transition.
+  Looped clips get an extra key at `duration` equal to frame zero so the last
+  interval interpolates back to the start. `AnimationFlags.Looped` and
+  `PlayBackwards` are derived from this metadata.
+- `GothicAnimationClip` keeps the upper-case lookup name, original source/data
+  names, `next`, layer, flags, blend in/out, first/last frame, event markers,
+  root-motion delta and a `HasRootMotion` flag. `aniAlias` entries reuse the
+  base clip's channels under the alias name. `aniComb` combo expansions are
+  deferred to the combat task.
+- `RuntimeModel.Clips` and `DrModel.Animations` use a case-insensitive
+  dictionary, so both `S_RUN` and `s_Run` resolve. `RuntimeModel.FindClip`
+  exposes the metadata; `AnimationController.StartClip` plays the contained
+  `AnimationClip` with `GothicAnimationClip.PlaybackFlags`.
+
+Events are stored with their frame, converted time and name (tag type,
+sound/particle name, morph animation, camera tremor fields), but are not fired
+yet; firing belongs to T3.7/T4.4. Root motion is measured from node 0's first
+and last sample (0.4 cm threshold) and is consumed by the NPC controller later.
 
 ### Animation layer
 
@@ -303,9 +345,30 @@ Unit tests (no GPU required):
    and the baked position is the weighted average.
 5. Weight normalization: sums 0.9 and 1.1 both produce sum 1 and a warning.
 6. Bone index padding and duplicate merging.
+7. Animation quaternion conversion equals the reflected transposed matrix; a
+   known +90 degree yaw sample matches the MDH bind rotation.
+8. A two-bone clip evaluated at frame zero and the midpoint yields the expected
+   local transforms, including yaw sign and linear translation.
+9. Loop clips get a closing key and interpolate back to frame zero; combo
+   windows force transition clips.
+10. Alias clips share channels and keep their own metadata.
+11. Non-depth-first MDH order is remapped; multiple roots and cycles are handled
+   without hanging.
+12. `SkinBone.Local` is exposed for `DrModelBone.DefaultPose` and matches the
+    bind composition.
 
 Diagnostics:
 
+- `--check-animations` loads every `MDS`, resolves MDH/MDL + MAN files, builds
+  the runtime skeleton and clips, and poses every clip at frame zero and its
+  midpoint. It checks all bone global transforms for NaN/Inf and reports
+  missing MAN files, warnings and over-72 models.
+- Current G2 NotR result (2026-11-20, patch 5): 117 MDS scripts, 5,783 clips
+  (2,066 loop, 3,717 transition), 1,852 aliases, 3,714,154 keyframes, 11,566
+  pose evaluations, 0 non-finite transforms and 0 failures in 1.3s. Max bones
+  79; 2 models exceed 72. Two Draconian whirlwind-victim MAN files are absent
+  from the installation. Eighteen warnings are static MOBSI animations whose
+  MAN files contain no nodes; they are intentionally skipped.
 - `--check-models` parses every `MDS` reachable from the mounted VFS, resolves
   MDH/MDL + MDM files, bakes every unique skinned mesh and reports: primary and
   variant bind inconsistency, bone counts, over-72 meshes and weight-sum
@@ -319,7 +382,7 @@ Diagnostics:
   (including armor/variants) reach `43.191 cm` raw / `21.816 cm` weighted.
   Bones above 72 are handled by the remap described above before rendering; the
   current task only converts and reports them.
-- This command is the acceptance evidence for the data-conversion tasks.
+- These commands are the acceptance evidence for the data-conversion tasks.
 
 Visual:
 

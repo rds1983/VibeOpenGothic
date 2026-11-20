@@ -127,6 +127,37 @@ public sealed class CoordinateSystemTests
 	}
 
 	[Fact]
+	public void ToEngineAnimationQuaternion_MatchesTransposedMatrixConversion()
+	{
+		var quaternion = Quaternion.Normalize(
+			Quaternion.CreateFromYawPitchRoll(0.77f, -0.31f, 0.12f));
+
+		// Gothic animation samples store a column-vector rotation, so the
+		// row-vector matrix is the transpose before the reflection.
+		var gothicRowVector = Matrix.Transpose(Matrix.CreateFromQuaternion(quaternion));
+		var viaMatrix = CoordinateSystem.ToEngineMatrix(gothicRowVector);
+		var direct = Matrix.CreateFromQuaternion(
+			CoordinateSystem.ToEngineAnimationQuaternion(quaternion));
+
+		AssertMatrixNear(viaMatrix, direct);
+	}
+
+	[Fact]
+	public void ToEngineAnimationQuaternion_MatchesKnownYawSample()
+	{
+		// HUMANS-S_RUN.MAN frame 0 root sample: +90 degrees around Y.
+		var quaternion = new Quaternion(0f, 0.7070817f, 0f, 0.7071319f);
+
+		var converted = CoordinateSystem.ToEngineAnimationQuaternion(quaternion);
+		var matrix = Matrix.CreateFromQuaternion(converted);
+
+		// MDH root after transposing and reflecting has this rotation row.
+		Assert.InRange(matrix.M11, -Epsilon, Epsilon);
+		Assert.InRange(matrix.M12, -Epsilon, Epsilon);
+		Assert.InRange(matrix.M13, -1f - Epsilon, -1f + Epsilon);
+	}
+
+	[Fact]
 	public void ToEngineBounds_ReflectsAndSwapsZRange()
 	{
 		var bounds = new BoundingBox(new Vector3(1, 2, 3), new Vector3(4, 5, 6));

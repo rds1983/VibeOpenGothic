@@ -87,7 +87,7 @@ Rules:
 | Skinning conversion | Bind consistency, weighted error, weight normalization, padding, bone limits, equivalence with the four-position formula, MDS/MDH/MDM naming resolution, `--check-models` real-data run |
 | Mesh conversion | Triangles/quads/fans, UV seams, material/lightmap submesh grouping, degenerate/invalid inputs, bounds, `--check-meshes` real-data run |
 | Textures/materials | TEX RGBA/mip decoding, `-C.TEX` resolution, cache/placeholder behavior, alpha-mode mapping, lightmap/two-sided flags |
-| Animation | Frame-to-time conversion, loop/transition timing, event firing, overlay blending |
+| Animation | Frame-to-time conversion, loop/transition timing, quaternion sign, alias/channel remapping, `--check-animations` real-data pose run, event firing |
 | World loading | VOB type mapping, transform composition, waynet integrity, missing assets |
 | Physics | Drop/rest, slopes, steps, wall slide, moving platforms, ray masks |
 | Scripts | External arity, marshaling, dialog flow, quest state, save/load of symbols |

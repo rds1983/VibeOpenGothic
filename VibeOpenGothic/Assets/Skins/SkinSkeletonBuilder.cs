@@ -56,6 +56,7 @@ public static class SkinSkeletonBuilder
 			bones[index] = new SkinBone(
 				nodes[index].Name,
 				nodes[index].ParentIndex,
+				locals[index],
 				globals[index],
 				inverse);
 		}
