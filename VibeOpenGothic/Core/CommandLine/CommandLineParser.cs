@@ -22,6 +22,7 @@ public static class CommandLineParser
 		var checkTextures = false;
 		var checkModels = false;
 		var checkAnimations = false;
+		var checkWorld = false;
 		var devMode = false;
 		var windowed = false;
 		var positionalOnly = false;
@@ -62,6 +63,9 @@ public static class CommandLineParser
 					break;
 				case "--check-animations":
 					checkAnimations = true;
+					break;
+				case "--check-world":
+					checkWorld = true;
 					break;
 				case "--devmode" or "-devmode":
 					devMode = true;
@@ -159,6 +163,7 @@ public static class CommandLineParser
 			CheckTextures = checkTextures,
 			CheckModels = checkModels,
 			CheckAnimations = checkAnimations,
+			CheckWorld = checkWorld,
 			DevMode = devMode,
 			Windowed = windowed,
 			VersionOverride = versionOverrides.Count == 1

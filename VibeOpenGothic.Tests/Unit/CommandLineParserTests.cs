@@ -24,6 +24,7 @@ public sealed class CommandLineParserTests
 		Assert.False(result.Options.CheckTextures);
 		Assert.False(result.Options.CheckModels);
 		Assert.False(result.Options.CheckAnimations);
+		Assert.False(result.Options.CheckWorld);
 		Assert.False(result.Options.DevMode);
 		Assert.False(result.Options.Windowed);
 		Assert.Equal(GameVersionOverride.Auto, result.Options.VersionOverride);
@@ -92,6 +93,15 @@ public sealed class CommandLineParserTests
 		var result = CommandLineParser.Parse(new[] { "--screenshot", "shots/test.png" });
 
 		Assert.Equal("shots/test.png", result.Options.ScreenshotPath);
+		Assert.False(result.HasErrors);
+	}
+
+	[Fact]
+	public void Parse_CheckWorldFlag_IsRecognized()
+	{
+		var result = CommandLineParser.Parse(new[] { "--check-world" });
+
+		Assert.True(result.Options.CheckWorld);
 		Assert.False(result.HasErrors);
 	}
 

@@ -28,6 +28,8 @@ public sealed record CommandLineOptions
 
 	public bool CheckAnimations { get; init; }
 
+	public bool CheckWorld { get; init; }
+
 	public bool DevMode { get; init; }
 
 	public bool Windowed { get; init; }

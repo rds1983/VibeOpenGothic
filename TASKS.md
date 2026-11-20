@@ -188,7 +188,7 @@ A task is done only when:
   Result: DigitalRiseModel primitives + `DrMeshPart`/`DrMaterial`, 1280x720
   deterministic PNG, 223 tests. See Design/07.
 
-- [ ] **T1.6 World loading and static rendering**
+- [x] **T1.6 World loading and static rendering** (2026-11-20)
   Load a ZEN world, convert the world mesh and VOB transforms/waypoints to engine
   RHS, batch by material/lightmap, spawn static VOBs with transform composition,
   resolve the start point, and render the world from a free camera. Reuse the
@@ -198,6 +198,10 @@ A task is done only when:
   **Done when:** `newworld.zen` renders recognizably from the start point
   (screenshot), nothing is inside-out or offset by a double conversion, no VOB
   type crashes, and a data test asserts counts/bounds within tolerances.
+  Result: `newworld.zen` renders from its start point; 473,502 world triangles,
+  11,546 static instances from 312 meshes, 2,959 waypoints, 229 tests,
+  deterministic 1280x720 PNG, F3 debug overlay and controls HUD. Lightmaps and
+  on-screen loading progress remain in the backlog. See Design/04 and Design/07.
 
 - [ ] **T1.7 Skinned VOBs and NPCs**
   Spawn model VOBs, build `DrModel`s from converted data, draw with
@@ -211,12 +215,13 @@ A task is done only when:
   without crashing.
 
 - [ ] **T1.8 Data diagnostics**
-  `--check-meshes` (T1.1), `--check-textures` (T1.2), `--check-models` (T1.3)
-  and `--check-animations` (T1.4) cover world meshes, textures, skinned models
-  and clips. Extend the suite with `--check-assets` / `--dump-data`: walk models,
-  textures and scripts; report cross-references (animations, attachments, missing
-  VOB assets), degenerate triangles and unsupported features as a summary and
-  optional JSON. Never write into the installation.
+  `--check-meshes` (T1.1), `--check-textures` (T1.2), `--check-models` (T1.3),
+  `--check-animations` (T1.4) and `--check-world` (T1.6) cover world meshes,
+  textures, skinned models, clips and world conversion. Extend the suite with
+  `--check-assets` / `--dump-data`: walk models, textures and scripts; report
+  cross-references (animations, attachments, missing VOB assets), degenerate
+  triangles and unsupported features as a summary and optional JSON. Never write
+  into the installation.
   **Done when:** the commands run on a real install and their output is used in
   the task evidence; docs describe the commands and their exit codes.
 
@@ -465,8 +470,12 @@ A task is done only when:
 
 - GOG/other launcher install detection and an interactive folder picker.
 - Texture frame animation (`loadFrames`) for animated materials.
+- On-screen world loading/progress screen (T1.6 currently reports progress and
+  timings through logs only).
 - Full GPU mip-chain upload and sampler/anisotropic policy (T1.5 uploads the
   top mip only).
+- World lightmap UV projection and `DualTextureEffect` (T1.6 renders solid/alpha
+  world materials without baked lightmaps).
 - Original Gothic UI replication: script-created menus, `.FNT` fonts, authentic
   inventory/journal/menu layouts and art.
 - Portal-based visibility from the BSP tree.

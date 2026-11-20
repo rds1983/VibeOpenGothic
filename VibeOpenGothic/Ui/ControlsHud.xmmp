@@ -1,0 +1,7 @@
+<Project>
+  <Project.ExportOptions Namespace="VibeOpenGothic.Ui" Class="ControlsHud" OutputPath="VibeOpenGothic/Ui" FieldsVisibility="Private" />
+  <VerticalStackPanel Spacing="2" Padding="8" Margin="8" HorizontalAlignment="Left" VerticalAlignment="Bottom">
+    <Label Id="_titleLabel" Text="Controls" TextColor="White" />
+    <Label Id="_debugToggleLabel" Text="F3 - Toggle debug overlay" TextColor="White" />
+  </VerticalStackPanel>
+</Project>

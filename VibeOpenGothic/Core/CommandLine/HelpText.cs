@@ -24,6 +24,7 @@ public static class HelpText
           --check-textures   Decode a sample of TEX files and report dimensions
           --check-models     Bake every MDS model and report skin diagnostics
           --check-animations Load every MDS animation and pose it
+          --check-world      Load and convert a ZEN world without rendering
           --screenshot <path> Render the test scene to a PNG and exit
           --help             Show this help
           --version          Show version information

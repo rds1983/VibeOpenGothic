@@ -47,8 +47,8 @@ Folders mirror namespaces. Names below are relative to `VibeOpenGothic/`.
 | `VibeOpenGothic.World` | World model: ZEN objects, VOB tree, waynet, triggers, spawning | Core, Data, Assets, Physics |
 | `VibeOpenGothic.Physics` | Bepu world, collision geometry, character controller, queries | Core, Bepu |
 | `VibeOpenGothic.Game` | Session, NPCs, combat, inventory, dialogs, quests, save/load, script externals | Core, Data, Assets, World, Physics |
-| `VibeOpenGothic.Rendering` | Graphics device, camera, effects, draw submission, GPU caches | Core, Assets |
-| `VibeOpenGothic.UI` | Myra screens, HUD, dialogs, menus; default fonts, optional Gothic FNT later | Core, Assets, Game (read-only view models) |
+| `VibeOpenGothic.Rendering` | Graphics device, camera, effects, draw submission, GPU caches | Core, Assets, World (read-only) |
+| `VibeOpenGothic.Ui` | Myra screens, HUD, dialogs, menus; default fonts, optional Gothic FNT later | Core, Assets, Game (read-only view models) |
 | `VibeOpenGothic.Audio` | Sound effects, music, listener | Core, Assets, Game (read-only) |
 | `VibeOpenGothic.Video` | Bink and other video playback (late) | Core |
 | `VibeOpenGothic.Tools` | CLI subcommands: probe, dump, benchmark | Core, Data, Assets |
@@ -63,6 +63,9 @@ Hard rules:
   `Game.Scripts`. Prefer converting to our types at the boundary.
 - `Assets` may use MonoGame math (`Vector3`, `Matrix`) and DigitalRiseModel CPU
   types but must not create GPU resources. `Rendering` owns GPU uploads.
+- `Rendering` may read a converted `WorldAsset` to build GPU resources, but it
+  never loads or mutates worlds; `App` loads the world and hands it to the
+  renderer.
 - Gothic data is left-handed; engine space is right-handed. All conversion goes
   through `Core.CoordinateSystem` in the loader that reads the data. Gameplay,
   rendering and physics must never flip axes or winding ad hoc.
@@ -82,7 +85,9 @@ Program
   -> GothicGame : Microsoft.Xna.Framework.Game
        Core.Timing.FixedStepRunner   60 Hz logic, max 4 catch-up steps
        Core.Timing.FrameStats        frame/logic counters for the title and logs
-       (future) GameSession, Renderer, UiRoot, AudioSystem
+       Rendering.GothicRenderer      world/static upload and draw
+       Ui.UiRoot                     Myra desktop and debug overlay
+       (future) GameSession, AudioSystem
 ```
 
 `GameSession` is the unit that a save game maps to. Changing a world keeps the
@@ -163,13 +168,16 @@ VFS bytes -> ZenKit parse -> AssetConverter -> CPU asset (immutable) -> cache
   and bakes every MDS/MDH/MDM model reachable from the VFS and reports primary
   and variant bind inconsistency, bone counts and weight anomalies.
   `--check-animations` loads every MDS/MAN, builds runtime skeletons and clips,
-  and poses each clip at frame zero and its midpoint. `--screenshot <path>`
-  renders the R0 test scene to a deterministic 1280x720 PNG. `--dump-data`
-  extracts converted meshes/textures for debugging (developer-only output, never
-  committed).
+  and poses each clip at frame zero and its midpoint. `--check-world` loads a ZEN
+  world without GPU upload and reports mesh/VOB/waypoint counts, bounds, start
+  point and timings. `--screenshot <path>` renders the world to a deterministic
+  1280x720 PNG. `--dump-data` extracts converted meshes/textures for debugging
+  (developer-only output, never committed).
 - Performance counters: frame time, update time, loaded asset count, draw calls,
-  triangle count, GC allocations per frame. The window title currently shows FPS
-  and frame time.
+  triangle count, GC allocations per frame. The window title shows FPS and frame
+  time; `F3` toggles a Myra debug overlay with FPS, draw calls and submitted
+  triangles for the current frame. The title and overlay share
+  `Core.Timing.FrameStats`.
 
 ## Coding conventions
 

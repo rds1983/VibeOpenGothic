@@ -27,6 +27,26 @@ World changes unload the previous world's GPU and collision data first. The
 session object survives; the player and script state are re-inserted into the new
 world (see [06-Gameplay.md](06-Gameplay.md)).
 
+### T1.6 static pass
+
+The first pass implements stages 1, 2 (visual only) and 5:
+
+- World mesh, static `.MRM`/`.MSH` VOB visuals and waypoints are converted to
+  engine space; portal/ghost-occluder polygons are skipped for the visual pass.
+- VOB transforms are composed root-to-leaf and applied once to shared static
+  meshes.
+- The `zCVobStartpoint` gives the first free-camera position and direction.
+- BSP queries, sky, collision, spawn logic, NPCs and moving objects remain for
+  T1.9/T2.x/T3.x.
+- `--check-world` reports 23 roots / 23,288 VOBs, 11,546 static instances from
+  312 unique meshes, 2,959 waypoints, 473k world triangles and a start point on
+  G2 NotR. The frame submits about 2.58M triangles and 21k draw calls once all
+  static instances are drawn. The CPU load takes about 1.8 s; GPU upload about
+  0.1 s for the world and 0.2 s for static meshes on the development machine.
+- Lightmaps are present in the world data but not applied yet: the current
+  vertex format has no lightmap UV, so `DualTextureEffect` waits for a dedicated
+  lightmap-projection task.
+
 ## Coordinate spaces
 
 Gothic data is Y-up, centimetres and **left-handed**; headings live in the XZ

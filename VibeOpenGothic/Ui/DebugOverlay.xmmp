@@ -1,0 +1,8 @@
+<Project>
+  <Project.ExportOptions Namespace="VibeOpenGothic.Ui" Class="DebugOverlay" OutputPath="VibeOpenGothic/Ui" FieldsVisibility="Private" />
+  <VerticalStackPanel Spacing="2" Padding="8" HorizontalAlignment="Left" VerticalAlignment="Top">
+    <Label Id="_fpsLabel" Text="FPS: 0" TextColor="White" />
+    <Label Id="_drawCallsLabel" Text="Draw calls: 0" TextColor="White" />
+    <Label Id="_polygonsLabel" Text="Polygons: 0" TextColor="White" />
+  </VerticalStackPanel>
+</Project>

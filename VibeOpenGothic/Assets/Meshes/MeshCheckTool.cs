@@ -50,7 +50,7 @@ public static class MeshCheckTool
 				stream.CopyTo(memory);
 
 				var read = new Read(memory.ToArray());
-				var world = new World(read, gameVersion);
+				var world = new ZenKit.World(read, gameVersion);
 				var mesh = world.Mesh;
 				if (mesh is null)
 				{

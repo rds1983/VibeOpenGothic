@@ -11,6 +11,7 @@ using VibeOpenGothic.Core.Settings;
 using VibeOpenGothic.Data.Installs;
 using VibeOpenGothic.Data.Probe;
 using VibeOpenGothic.Data.Vfs;
+using VibeOpenGothic.World;
 
 namespace VibeOpenGothic;
 
@@ -171,6 +172,11 @@ internal static class Program
 			if (options.CheckAnimations)
 			{
 				return AnimationCheckTool.Run(install, vfs);
+			}
+
+			if (options.CheckWorld)
+			{
+				return WorldCheckTool.Run(install, vfs, options.StartupWorld);
 			}
 
 			if (!vfs.FileExists(install.DefaultGameDatName))

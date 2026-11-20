@@ -5,6 +5,9 @@ using Microsoft.Xna.Framework.Input;
 using VibeOpenGothic.Core.Logging;
 using VibeOpenGothic.Core.Timing;
 using VibeOpenGothic.Rendering;
+using VibeOpenGothic.Ui;
+using VibeOpenGothic.World;
+using ZenKit;
 
 namespace VibeOpenGothic.App;
 
@@ -25,10 +28,13 @@ public sealed class GothicGame : Game
 	private readonly FrameStats _frames = new();
 
 	private GothicRenderer? _renderer;
+	private UiRoot? _ui;
 	private double _lastUpdateMs;
 	private double _titleRefreshSeconds;
+	private double _debugStatsSeconds;
 	private bool _firstFrameLogged;
 	private bool _screenshotAttempted;
+	private bool _debugToggleWasDown;
 
 	public GothicGame(GothicGameOptions options)
 	{
@@ -96,11 +102,24 @@ public sealed class GothicGame : Game
 	protected override void LoadContent()
 	{
 		base.LoadContent();
-		_renderer = new GothicRenderer(GraphicsDevice, _options.Vfs);
+
+		var worldName = _options.CommandLine.StartupWorld ?? _options.Install.DefaultWorldName;
+		var gameVersion = _options.Install.Version.IsGothic1
+			? GameVersion.Gothic1
+			: GameVersion.Gothic2;
+		var world = WorldLoader.Load(
+			_options.Vfs,
+			worldName,
+			gameVersion,
+			message => Log.Info("World", message));
+		_renderer = new GothicRenderer(GraphicsDevice, world);
+		_ui = new UiRoot(this);
 	}
 
 	protected override void UnloadContent()
 	{
+		_ui?.Dispose();
+		_ui = null;
 		_renderer?.Dispose();
 		_renderer = null;
 		base.UnloadContent();
@@ -110,11 +129,20 @@ public sealed class GothicGame : Game
 	{
 		var updateStart = Stopwatch.GetTimestamp();
 
-		if (Keyboard.GetState().IsKeyDown(Keys.Escape) ||
+		var keyboard = Keyboard.GetState();
+		if (keyboard.IsKeyDown(Keys.Escape) ||
 			GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed)
 		{
 			Exit();
 		}
+
+		var debugToggle = keyboard.IsKeyDown(Keys.F3);
+		if (debugToggle && !_debugToggleWasDown)
+		{
+			_ui?.ToggleDebugOverlay();
+		}
+
+		_debugToggleWasDown = debugToggle;
 
 		var elapsed = gameTime.ElapsedGameTime.TotalSeconds;
 		_fixedStep.Advance(elapsed, _ => _frames.AddLogicStep());
@@ -161,6 +189,23 @@ public sealed class GothicGame : Game
 		_frames.AddFrame(elapsed, _lastUpdateMs, drawMs);
 		_titleRefreshSeconds += elapsed;
 
+		if (_ui is not null && _renderer is not null)
+		{
+			// Stats are refreshed a few times per second; rebuilding label
+			// strings every frame would allocate in the render loop.
+			_debugStatsSeconds += elapsed;
+			if (_ui.DebugOverlayVisible && _debugStatsSeconds >= 0.25)
+			{
+				_debugStatsSeconds = 0;
+				_ui.SetDebugStats(
+					(float)_frames.Fps,
+					_renderer.LastDrawCalls,
+					_renderer.LastDrawnPolygons);
+			}
+
+			_ui.Render();
+		}
+
 		if (_titleRefreshSeconds >= 1.0)
 		{
 			_titleRefreshSeconds = 0;
@@ -203,6 +248,14 @@ public sealed class GothicGame : Game
 		{
 			GraphicsDevice.SetRenderTarget(target);
 			_renderer.Draw(gameTime);
+			if (_ui is not null)
+			{
+				_ui.SetDebugStats(
+					(float)_frames.Fps,
+					_renderer.LastDrawCalls,
+					_renderer.LastDrawnPolygons);
+				_ui.Render();
+			}
 		}
 		finally
 		{

@@ -13,6 +13,14 @@ authentic UI work.
 Myra provides the desktop, widgets, skinning and input. Its text rendering is
 FontStashSharp-based (`SpriteFontBase`), which is sufficient for a functional UI.
 
+Screens are authored as Myra `.xmmp` projects under `VibeOpenGothic/Ui/` and
+exported with `myra-export` (for example
+`myra-export VibeOpenGothic/Ui/DebugOverlay.xmmp --output VibeOpenGothic/Ui`).
+Set `FieldsVisibility="Private"` in `Project.ExportOptions` so generated widget
+fields stay private to the partial class. The exporter preserves the
+hand-written `.cs` file (styles, bindings, update logic) and regenerates
+`<Name>.Generated.cs`, so do not edit generated files by hand.
+
 ### Fonts
 
 - **Initial UI:** use a bundled/default FontStashSharp font (or Myra's default
@@ -39,8 +47,10 @@ Screens:
 
 | Screen | Source | Milestone |
 | --- | --- | --- |
-| Loading/progress | App | T1.6 |
-| Debug HUD, console | App, Game | T2.2, T3.10 |
+| Loading/progress | App | Backlog (logs only in T1.6) |
+| Debug overlay (FPS, draw calls, triangles) | App | T1.6 |
+| Controls HUD | App | T1.6 |
+| Debug console | App, Game | T2.2, T3.10 |
 | HUD: health, mana, stamina, focus prompt, subtitles | Game session | T2.7 |
 | Main menu, settings, save/load list, pause | App (plain Myra) | T4.2 |
 | Inventory, equipment | Game inventory | T3.5/T4.3 |

@@ -88,12 +88,12 @@ Rules:
 | Mesh conversion | Triangles/quads/fans, UV seams, material/lightmap submesh grouping, degenerate/invalid inputs, bounds, `--check-meshes` real-data run |
 | Textures/materials | TEX RGBA/mip decoding, `-C.TEX` resolution, cache/placeholder behavior, alpha-mode mapping, lightmap/two-sided flags |
 | Animation | Frame-to-time conversion, loop/transition timing, quaternion sign, alias/channel remapping, `--check-animations` real-data pose run, event firing |
-| World loading | VOB type mapping, transform composition, waynet integrity, missing assets |
+| World loading | VOB transform composition, startpoint/waypoint conversion, mesh/material counts and bounds, `--check-world` real-data run, `newworld.zen` render smoke test |
 | Physics | Drop/rest, slopes, steps, wall slide, moving platforms, ray masks |
 | Scripts | External arity, marshaling, dialog flow, quest state, save/load of symbols |
 | Gameplay | Inventory transfer, trade price, combat with fixed seeds, clock advance |
 | Save/load | Round-trip each entity, version migration, atomic write, corrupt archive |
-| UI/fonts | HUD and dialog-presenter bindings, UI scale, default font; FNT glyph metrics only if Gothic fonts are implemented |
+| UI/fonts | HUD and dialog-presenter bindings, UI scale, default font; FNT glyph metrics only if Gothic fonts are implemented; F3 debug overlay and controls HUD manual smoke test |
 | Rendering | Camera handedness/aspect, deterministic `--screenshot` PNG, non-black frame, real texture orientation/alpha/two-sided smoke check |
 
 ## Golden data

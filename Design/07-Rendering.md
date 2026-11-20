@@ -18,37 +18,61 @@ Renderer ladder:
 
 Each stage must be replaceable without touching gameplay code.
 
-## R0 test scene (T1.5)
+## Static world scene (T1.6)
 
-The first renderer is a fixed test scene, not a world:
+The first world renderer replaces the T1.5 primitive test scene:
 
-- A right-handed `GothicCamera` using `CreateLookAt` and
-  `CreatePerspectiveFieldOfView`; no mirrored view matrix or per-draw sign flips.
-- A depth-buffered backbuffer, a dark ground plane and a grid.
-- Geometry comes from DigitalRiseModel primitives: `MeshPrimitives.CreateBoxMesh`
-  for the cube, `CreatePlaneMesh` for the ground and map/sign quads, and
-  `CreatePlaneLinesMeshPart` for the grid. Each part is a `DrMeshPart`; texture
-  and colour live on a `DrMaterial`. `DrMaterial.Tag` stores the richer
-  `MaterialDesc` because DigitalRiseModel has no alpha-mode/two-sided fields.
-- The cube uses real `TextureData` and a `MaterialDesc` built by
-  `MaterialBuilder` from the sign atlas `OBJ_CITY_SIGNSALL_01`.
-- A parchment map quad (`MAP_NEWWORLD`) to verify UV orientation and readable
-  asymmetric content.
-- An alpha-tested `NW_SEQ_EGG_SIGN_01` quad with readable text, plus a rotated
-  copy showing its back face. The material's `IsTwoSided` heuristic selects
-  `RasterizerState.CullNone`; a solid material uses `CullCounterClockwise`.
-- The unlit normal-colour cube uses a custom `DrMeshPart` because DigitalRiseModel
-  has no vertex-colour primitive. Its colours encode the face normals and are
-  drawn with `BasicEffect` lighting disabled.
-- `GpuTextureCache` is the only place that uploads `TextureData`. T1.5 uploads
-  the top mip; full mip-chain upload and sampler policy belong to performance
-  work once real worlds are measured.
+- `WorldLoader` parses `newworld.zen`, converts the world mesh through
+  `ZenKitMeshAdapter`/`MeshBuilder`, maps materials with `MaterialSetBuilder`,
+  composes the VOB tree with `GothicVobTransform`, converts waypoints and resolves
+  the `zCVobStartpoint` position/direction.
+- World render geometry skips invisible portal and ghost-occluder polygons for
+  the visual pass; the BSP/portal data remains available in the ZEN for T1.9.
+- The world mesh uses one shared vertex/index buffer. Adjacent submeshes with
+  the same material are merged into one draw range: 12,729 converted submeshes
+  become about 1,081 draws without duplicating vertices.
+- Static VOB visuals resolve `.3DS` names to compiled `.MRM`/`.MSH` files. Each
+  unique mesh is uploaded into a `DrMesh` with one `DrMeshPart` per submesh
+  (312 unique meshes for 11,546 instances); each instance applies its composed
+  engine transform. The world mesh itself remains a `WorldMeshGpu` shared buffer
+  because its 1,081 material ranges need one vertex buffer and merged draw
+  ranges.
+- Materials are drawn with `BasicEffect` for solid surfaces and
+  `AlphaTestEffect` for alpha surfaces; `MaterialDesc.IsTwoSided` selects
+  `CullNone`. Lightmaps exist in the ZEN, but `MeshVertex` has no lightmap UV
+  projection yet, so `DualTextureEffect` is deferred.
+- The camera starts at the startpoint plus eye height, looking along its
+  converted direction; far plane is 160,000 cm and fog fades the world into the
+  sky colour.
 - Window resize is handled by updating the camera aspect from
   `GraphicsDevice.Viewport` every draw.
+- `GpuTextureCache` still uploads only the top mip.
 
-The screenshot command renders this scene once into a fixed 1280x720
-`RenderTarget2D` with a depth buffer and writes a PNG. The scene is static and the
-camera is fixed, so repeated runs produce byte-identical PNGs.
+`--check-world` performs the same CPU load without GPU upload and prints mesh,
+VOB, waypoint, bounds, start-point and timing statistics. `--screenshot` renders
+the world once into a fixed 1280x720 depth-buffered target and exits; the scene
+and camera are static, so repeated runs are byte-identical.
+
+### Debug overlay (T1.6)
+
+`F3` toggles a Myra debug overlay in the top-left corner:
+
+- Source: `Ui/DebugOverlay.xmmp` (a `VerticalStackPanel` with one `Label` per
+  line). `myra-export` generates `Ui/DebugOverlay.Generated.cs`; the hand-written
+  `Ui/DebugOverlay.cs` owns styling and the label updates and is preserved by the
+  exporter. `FieldsVisibility="Private"` keeps the generated label fields private
+  to the partial class.
+- `Ui/UiRoot` sets `MyraEnvironment.Game`, owns the `Desktop` and renders it after
+  the 3D scene.
+- Lines: frame FPS, world/static draw calls and submitted triangles. The counters
+  are produced by `WorldRenderer` for the current frame and exclude Myra's own UI
+  draws.
+- Labels refresh at 4 Hz to avoid per-frame string allocations. The overlay is
+  hidden by default and is not included in the deterministic `--screenshot`
+  output unless it is toggled on.
+- `Ui/ControlsHud.xmmp` is a second, always-visible block at the bottom-left. It
+  currently lists `F3 - Toggle debug overlay`; future controls go there instead
+  of the debug overlay.
 
 ## Platform and device
 
@@ -187,7 +211,9 @@ an optional parity feature (see
 
 ## Diagnostics
 
-- FPS/frame-time overlay, draw calls, triangles, visible objects, texture memory.
+- `F3` debug overlay: current-frame FPS, world/static draw calls and submitted
+  triangles (see T1.6 above), plus frame-time logs. Visible objects and texture
+  memory come later.
 - Screenshot command (`--screenshot <path>`) writes a PNG with a fixed
   camera setup; screenshots are the evidence for visual tasks. `--screenshot`
   uses a fixed 1280x720 render target and exits after writing the file.

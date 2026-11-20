@@ -10,7 +10,7 @@ namespace VibeOpenGothic.Assets.Meshes;
 /// </summary>
 public static class ZenKitMeshAdapter
 {
-	public static MeshSource FromMesh(IMesh mesh)
+	public static MeshSource FromMesh(IMesh mesh, bool includePortals = true, bool includeGhostOccluders = true)
 	{
 		ArgumentNullException.ThrowIfNull(mesh);
 
@@ -31,7 +31,7 @@ public static class ZenKitMeshAdapter
 		var polygons = new List<MeshSourcePolygon>(mesh.PolygonCount);
 		foreach (var polygon in mesh.Polygons)
 		{
-			if (polygon.IsLod)
+			if (polygon.IsLod || (!includePortals && polygon.IsPortal) || (!includeGhostOccluders && polygon.IsGhostOccluder))
 			{
 				continue;
 			}
