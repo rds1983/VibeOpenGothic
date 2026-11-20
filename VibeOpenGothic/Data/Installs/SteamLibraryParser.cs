@@ -8,114 +8,114 @@ namespace VibeOpenGothic.Data.Installs;
 /// </summary>
 public static class SteamLibraryParser
 {
-    public static IReadOnlyList<string> ReadLibraryFolders(string steamRoot)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(steamRoot);
+	public static IReadOnlyList<string> ReadLibraryFolders(string steamRoot)
+	{
+		ArgumentException.ThrowIfNullOrWhiteSpace(steamRoot);
 
-        var path = Path.Combine(steamRoot, "steamapps", "libraryfolders.vdf");
-        if (!File.Exists(path))
-        {
-            return Array.Empty<string>();
-        }
+		var path = Path.Combine(steamRoot, "steamapps", "libraryfolders.vdf");
+		if (!File.Exists(path))
+		{
+			return Array.Empty<string>();
+		}
 
-        return Parse(File.ReadAllText(path, Encoding.Latin1));
-    }
+		return Parse(File.ReadAllText(path, Encoding.Latin1));
+	}
 
-    public static IReadOnlyList<string> Parse(string text)
-    {
-        ArgumentNullException.ThrowIfNull(text);
+	public static IReadOnlyList<string> Parse(string text)
+	{
+		ArgumentNullException.ThrowIfNull(text);
 
-        var tokens = Tokenize(text).ToArray();
-        var paths = new List<string>();
+		var tokens = Tokenize(text).ToArray();
+		var paths = new List<string>();
 
-        for (var index = 0; index + 1 < tokens.Length; index++)
-        {
-            if (!tokens[index].Equals("path", StringComparison.OrdinalIgnoreCase))
-            {
-                continue;
-            }
+		for (var index = 0; index + 1 < tokens.Length; index++)
+		{
+			if (!tokens[index].Equals("path", StringComparison.OrdinalIgnoreCase))
+			{
+				continue;
+			}
 
-            var value = tokens[index + 1];
-            if (value.Length > 0 && (Path.IsPathRooted(value) || value.Contains('/') || value.Contains('\\')))
-            {
-                paths.Add(value);
-            }
+			var value = tokens[index + 1];
+			if (value.Length > 0 && (Path.IsPathRooted(value) || value.Contains('/') || value.Contains('\\')))
+			{
+				paths.Add(value);
+			}
 
-            index++;
-        }
+			index++;
+		}
 
-        return paths
-            .Distinct(PathResolver.PathComparer)
-            .ToArray();
-    }
+		return paths
+			.Distinct(PathResolver.PathComparer)
+			.ToArray();
+	}
 
-    private static IEnumerable<string> Tokenize(string text)
-    {
-        for (var index = 0; index < text.Length;)
-        {
-            var current = text[index];
+	private static IEnumerable<string> Tokenize(string text)
+	{
+		for (var index = 0; index < text.Length;)
+		{
+			var current = text[index];
 
-            if (char.IsWhiteSpace(current))
-            {
-                index++;
-                continue;
-            }
+			if (char.IsWhiteSpace(current))
+			{
+				index++;
+				continue;
+			}
 
-            if (current == '/' && index + 1 < text.Length && text[index + 1] == '/')
-            {
-                while (index < text.Length && text[index] != '\n')
-                {
-                    index++;
-                }
+			if (current == '/' && index + 1 < text.Length && text[index + 1] == '/')
+			{
+				while (index < text.Length && text[index] != '\n')
+				{
+					index++;
+				}
 
-                continue;
-            }
+				continue;
+			}
 
-            if (current is '{' or '}')
-            {
-                yield return current.ToString();
-                index++;
-                continue;
-            }
+			if (current is '{' or '}')
+			{
+				yield return current.ToString();
+				index++;
+				continue;
+			}
 
-            if (current == '"')
-            {
-                index++;
-                var builder = new StringBuilder();
+			if (current == '"')
+			{
+				index++;
+				var builder = new StringBuilder();
 
-                while (index < text.Length && text[index] != '"')
-                {
-                    if (text[index] == '\\' && index + 1 < text.Length)
-                    {
-                        index++;
-                        builder.Append(text[index]);
-                    }
-                    else
-                    {
-                        builder.Append(text[index]);
-                    }
+				while (index < text.Length && text[index] != '"')
+				{
+					if (text[index] == '\\' && index + 1 < text.Length)
+					{
+						index++;
+						builder.Append(text[index]);
+					}
+					else
+					{
+						builder.Append(text[index]);
+					}
 
-                    index++;
-                }
+					index++;
+				}
 
-                if (index < text.Length)
-                {
-                    index++;
-                }
+				if (index < text.Length)
+				{
+					index++;
+				}
 
-                yield return builder.ToString();
-                continue;
-            }
+				yield return builder.ToString();
+				continue;
+			}
 
-            var start = index;
-            while (index < text.Length &&
-                   !char.IsWhiteSpace(text[index]) &&
-                   text[index] is not '{' and not '}')
-            {
-                index++;
-            }
+			var start = index;
+			while (index < text.Length &&
+				   !char.IsWhiteSpace(text[index]) &&
+				   text[index] is not '{' and not '}')
+			{
+				index++;
+			}
 
-            yield return text[start..index];
-        }
-    }
+			yield return text[start..index];
+		}
+	}
 }

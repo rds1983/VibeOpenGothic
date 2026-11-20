@@ -125,6 +125,9 @@ Notes:
 - Timings are milliseconds.
 - Models reference textures and skeletons by name; name resolution is
   case-insensitive and tries `_work` first, then the VFS.
+- Material texture names usually end in `.TGA`; the archives store
+  `<stem>-C.TEX` (compressed) and sometimes `<stem>.TEX`. Resolution tries the
+  exact name, then `<stem>-C.TEX`, then `<stem>.TEX`.
 - `.SAV`/ZenKit `SaveGame` is read-only metadata support. VibeOpenGothic uses its
   own save format (see [06-Gameplay.md](06-Gameplay.md)); importing original
   saves is a non-goal.

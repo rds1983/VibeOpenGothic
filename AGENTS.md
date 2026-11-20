@@ -161,6 +161,7 @@ Only after explicit confirmation:
 - **Run:** `dotnet run --project VibeOpenGothic -- -g "<Gothic II path>"`
 - Keep the core headless. Gameplay, world and conversion code must not depend on
   `GraphicsDevice`.
+- Indent C# with tabs (tab width 4). XML, JSON and Markdown use spaces.
 - Gothic data is left-handed and the engine is right-handed. Convert once in the
   loader through `Core.CoordinateSystem`; never flip axes, winding or UVs ad hoc
   in gameplay, rendering or physics.

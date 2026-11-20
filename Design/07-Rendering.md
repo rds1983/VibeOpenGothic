@@ -80,10 +80,10 @@ triangle winding. Consequences:
 | Gothic property | Stock effect mapping |
 | --- | --- |
 | color, texture | `BasicEffect.DiffuseColor`, `.Texture` |
-| `AlphaFunction` != none | `AlphaTestEffect` with the closest compare function |
-| `DisableLightmap` false and a lightmap exists | `DualTextureEffect` (texture * lightmap) |
-| two-sided material | `RasterizerState.CullNone` |
-| transparency / additive | `BlendState.AlphaBlend` / `.Additive` |
+| `MaterialAlphaMode.AlphaTest` | `AlphaTestEffect` |
+| lightmap present and not disabled | `DualTextureEffect` (texture * lightmap) |
+| `MaterialDesc.IsTwoSided` | `RasterizerState.CullNone` |
+| transparent / additive / multiply | matching `BlendState` |
 | texture scale | `BasicEffect.TextureTransform` |
 | texture animation (fps, mapping mode, direction) | animate `TextureTransform` offsets from game time |
 | environment mapping | `EnvironmentMapEffect` as an approximation |
@@ -94,8 +94,9 @@ triangle winding. Consequences:
 Per-material draw state is cached; never construct effects or states per frame.
 
 Missing textures produce a cached magenta placeholder, never a crash. Texture
-animation frame names follow Gothic's suffix convention; resolve existing frames
-only and log missing ones once.
+resolution tries the exact name, `<stem>-C.TEX` and `<stem>.TEX`
+case-insensitively. Texture animation frame names follow Gothic's suffix
+convention; resolve existing frames only and log missing ones once.
 
 ## Lighting and sky
 

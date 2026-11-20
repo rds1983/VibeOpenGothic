@@ -6,13 +6,13 @@ namespace VibeOpenGothic.Data.Vfs;
 /// </summary>
 public interface IGameVfs : IDisposable
 {
-    bool FileExists(string nameOrPath);
+	bool FileExists(string nameOrPath);
 
-    bool DirectoryExists(string path);
+	bool DirectoryExists(string path);
 
-    Stream OpenRead(string nameOrPath);
+	Stream OpenRead(string nameOrPath);
 
-    VfsFileEntry? Find(string nameOrPath);
+	VfsFileEntry? Find(string nameOrPath);
 
-    IEnumerable<VfsFileEntry> EnumerateFiles();
+	IEnumerable<VfsFileEntry> EnumerateFiles();
 }

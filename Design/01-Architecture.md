@@ -158,8 +158,10 @@ VFS bytes -> ZenKit parse -> AssetConverter -> CPU asset (immutable) -> cache
 - `--probe` resolves the installation, prints its version, archive list and file
   count, and resolves `GOTHIC.DAT`, the startup world, a sample texture/model and
   the cutscene output units. `--check-meshes` converts every ZEN world mesh and
-  reports counts, degenerates and failures. `--dump-data` extracts converted
-  meshes/textures for debugging (developer-only output, never committed).
+  reports counts, degenerates and failures. `--check-textures` decodes a sample
+  of TEX files and reports dimensions, mips and alpha. `--dump-data` extracts
+  converted meshes/textures for debugging (developer-only output, never
+  committed).
 - Performance counters: frame time, update time, loaded asset count, draw calls,
   triangle count, GC allocations per frame. The window title currently shows FPS
   and frame time.
@@ -167,6 +169,7 @@ VFS bytes -> ZenKit parse -> AssetConverter -> CPU asset (immutable) -> cache
 ## Coding conventions
 
 - C# 12, nullable reference types enabled, warnings treated as errors in CI.
+- Indent C# with tabs (tab width 4); XML, JSON and Markdown use spaces.
 - File-scoped namespaces, one public type per file, `sealed` by default.
 - Private fields `_camelCase`; constants `PascalCase`; async methods suffixed
   `Async`; booleans read as predicates (`IsLoaded`, `HasFocus`).

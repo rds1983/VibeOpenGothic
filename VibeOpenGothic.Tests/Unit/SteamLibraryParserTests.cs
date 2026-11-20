@@ -5,10 +5,10 @@ namespace VibeOpenGothic.Tests.Unit;
 
 public sealed class SteamLibraryParserTests
 {
-    [Fact]
-    public void Parse_ReadsAllPathValues()
-    {
-        const string text = """
+	[Fact]
+	public void Parse_ReadsAllPathValues()
+	{
+		const string text = """
             "libraryfolders"
             {
                 "0"
@@ -27,17 +27,17 @@ public sealed class SteamLibraryParserTests
             }
             """;
 
-        var paths = SteamLibraryParser.Parse(text);
+		var paths = SteamLibraryParser.Parse(text);
 
-        Assert.Equal(2, paths.Count);
-        Assert.Contains(@"C:\Program Files (x86)\Steam", paths);
-        Assert.Contains(@"D:\SteamLibrary", paths);
-    }
+		Assert.Equal(2, paths.Count);
+		Assert.Contains(@"C:\Program Files (x86)\Steam", paths);
+		Assert.Contains(@"D:\SteamLibrary", paths);
+	}
 
-    [Fact]
-    public void Parse_IgnoresCommentsAndUnrelatedKeys()
-    {
-        const string text = """
+	[Fact]
+	public void Parse_IgnoresCommentsAndUnrelatedKeys()
+	{
+		const string text = """
             // comment
             "libraryfolders"
             {
@@ -46,33 +46,33 @@ public sealed class SteamLibraryParserTests
             }
             """;
 
-        var paths = SteamLibraryParser.Parse(text);
+		var paths = SteamLibraryParser.Parse(text);
 
-        Assert.Single(paths);
-        Assert.Equal(@"E:\Games", paths[0]);
-    }
+		Assert.Single(paths);
+		Assert.Equal(@"E:\Games", paths[0]);
+	}
 
-    [Fact]
-    public void ReadLibraryFolders_MissingFile_ReturnsEmpty()
-    {
-        using var temp = new TempDirectory();
+	[Fact]
+	public void ReadLibraryFolders_MissingFile_ReturnsEmpty()
+	{
+		using var temp = new TempDirectory();
 
-        var paths = SteamLibraryParser.ReadLibraryFolders(temp.Root);
+		var paths = SteamLibraryParser.ReadLibraryFolders(temp.Root);
 
-        Assert.Empty(paths);
-    }
+		Assert.Empty(paths);
+	}
 
-    [Fact]
-    public void ReadLibraryFolders_ReadsSteamAppsFile()
-    {
-        using var temp = new TempDirectory();
-        temp.CreateFile(
-            Path.Combine("steamapps", "libraryfolders.vdf"),
-            "\"libraryfolders\" { \"0\" { \"path\" \"D:\\\\SteamLibrary\" } }");
+	[Fact]
+	public void ReadLibraryFolders_ReadsSteamAppsFile()
+	{
+		using var temp = new TempDirectory();
+		temp.CreateFile(
+			Path.Combine("steamapps", "libraryfolders.vdf"),
+			"\"libraryfolders\" { \"0\" { \"path\" \"D:\\\\SteamLibrary\" } }");
 
-        var paths = SteamLibraryParser.ReadLibraryFolders(temp.Root);
+		var paths = SteamLibraryParser.ReadLibraryFolders(temp.Root);
 
-        Assert.Single(paths);
-        Assert.Equal(@"D:\SteamLibrary", paths[0]);
-    }
+		Assert.Single(paths);
+		Assert.Equal(@"D:\SteamLibrary", paths[0]);
+	}
 }

@@ -7,83 +7,83 @@ namespace VibeOpenGothic.Data;
 /// </summary>
 public static class PathResolver
 {
-    public static string? ResolveExisting(string root, string relativePath)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(root);
-        ArgumentNullException.ThrowIfNull(relativePath);
+	public static string? ResolveExisting(string root, string relativePath)
+	{
+		ArgumentException.ThrowIfNullOrWhiteSpace(root);
+		ArgumentNullException.ThrowIfNull(relativePath);
 
-        if (!Directory.Exists(root))
-        {
-            return null;
-        }
+		if (!Directory.Exists(root))
+		{
+			return null;
+		}
 
-        var current = Path.GetFullPath(root);
+		var current = Path.GetFullPath(root);
 
-        foreach (var part in Split(relativePath))
-        {
-            if (part == ".")
-            {
-                continue;
-            }
+		foreach (var part in Split(relativePath))
+		{
+			if (part == ".")
+			{
+				continue;
+			}
 
-            if (part == "..")
-            {
-                current = Path.GetDirectoryName(current) ?? current;
-                continue;
-            }
+			if (part == "..")
+			{
+				current = Path.GetDirectoryName(current) ?? current;
+				continue;
+			}
 
-            var child = FindChild(current, part);
-            if (child is null)
-            {
-                return null;
-            }
+			var child = FindChild(current, part);
+			if (child is null)
+			{
+				return null;
+			}
 
-            current = child;
-        }
+			current = child;
+		}
 
-        return current;
-    }
+		return current;
+	}
 
-    public static string? FindChild(string directory, string name)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(directory);
-        ArgumentException.ThrowIfNullOrWhiteSpace(name);
+	public static string? FindChild(string directory, string name)
+	{
+		ArgumentException.ThrowIfNullOrWhiteSpace(directory);
+		ArgumentException.ThrowIfNullOrWhiteSpace(name);
 
-        if (!Directory.Exists(directory))
-        {
-            return null;
-        }
+		if (!Directory.Exists(directory))
+		{
+			return null;
+		}
 
-        string? caseInsensitiveMatch = null;
+		string? caseInsensitiveMatch = null;
 
-        foreach (var entry in Directory.EnumerateFileSystemEntries(directory))
-        {
-            var entryName = Path.GetFileName(entry);
+		foreach (var entry in Directory.EnumerateFileSystemEntries(directory))
+		{
+			var entryName = Path.GetFileName(entry);
 
-            if (string.Equals(entryName, name, StringComparison.Ordinal))
-            {
-                return entry;
-            }
+			if (string.Equals(entryName, name, StringComparison.Ordinal))
+			{
+				return entry;
+			}
 
-            if (caseInsensitiveMatch is null &&
-                string.Equals(entryName, name, StringComparison.OrdinalIgnoreCase))
-            {
-                caseInsensitiveMatch = entry;
-            }
-        }
+			if (caseInsensitiveMatch is null &&
+				string.Equals(entryName, name, StringComparison.OrdinalIgnoreCase))
+			{
+				caseInsensitiveMatch = entry;
+			}
+		}
 
-        return caseInsensitiveMatch;
-    }
+		return caseInsensitiveMatch;
+	}
 
-    public static IEnumerable<string> Split(string path)
-    {
-        return path.Split(
-            new[] { '\\', '/' },
-            StringSplitOptions.RemoveEmptyEntries);
-    }
+	public static IEnumerable<string> Split(string path)
+	{
+		return path.Split(
+			new[] { '\\', '/' },
+			StringSplitOptions.RemoveEmptyEntries);
+	}
 
-    public static StringComparer PathComparer =>
-        OperatingSystem.IsWindows() || OperatingSystem.IsMacOS()
-            ? StringComparer.OrdinalIgnoreCase
-            : StringComparer.Ordinal;
+	public static StringComparer PathComparer =>
+		OperatingSystem.IsWindows() || OperatingSystem.IsMacOS()
+			? StringComparer.OrdinalIgnoreCase
+			: StringComparer.Ordinal;
 }

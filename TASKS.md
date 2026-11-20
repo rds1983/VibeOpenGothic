@@ -30,11 +30,11 @@ A task is done only when:
 
 ## Current focus
 
-**T1.2 - Textures and material mapping.** T1.1 is complete.
+**T1.3 - Skinned mesh conversion.** T1.2 is complete.
 
-> T1.1 is complete: world/static and model meshes convert to engine `MeshData`
-> and `--check-meshes` validates all world meshes. T1.2 adds texture decoding,
-> caching and material descriptors.
+> T1.2 is complete: textures decode through the `-C.TEX` convention, materials map
+> to `MaterialDesc`, and `--check-textures` validates real data. T1.3 converts
+> Gothic's four-position skinned meshes to standard LBS and adds model diagnostics.
 
 ## Milestone overview
 
@@ -122,7 +122,7 @@ A task is done only when:
   counts; `MeshData` has no ZenKit or GPU dependencies. Visual orientation/text
   verification happens in T1.5.
 
-- [ ] **T1.2 Textures and material mapping**
+- [x] **T1.2 Textures and material mapping** (2026-11-20)
   Decode `.TEX` to RGBA (use ZenKit's RGBA mipmaps), build a texture cache with
   placeholder fallbacks, resolve texture names case-insensitively, and map
   Gothic materials to `MaterialDesc` (color, texture scale, alpha function,
@@ -132,7 +132,8 @@ A task is done only when:
   Report missing textures once per name.
   **Done when:** decoded real textures have correct dimensions, mipmaps and
   alpha; unit tests cover material mapping and cache behavior; missing textures
-  do not crash. Visual orientation/alpha is verified in T1.5.
+  do not crash; `--check-textures` decodes a real sample without failures.
+  Visual orientation/alpha is verified in T1.5.
 
 - [ ] **T1.3 Skinned mesh conversion (key task)**
   Implement the bake described in Design/03: convert influences and bind
@@ -160,7 +161,9 @@ A task is done only when:
 - [ ] **T1.5 Renderer bring-up**
   MonoGame window, `GraphicsDevice` lifecycle, right-handed `GothicCamera`, depth
   buffer, `BasicEffect` test scene (grid, textured cube, unlit normals debug),
-  resize handling, screenshot command. No custom shaders.
+  resize handling, screenshot command. No custom shaders. Use `TextureData` and
+  `MaterialDesc` from T1.2; verify texture orientation, alpha modes and the
+  two-sided heuristic with real assets.
   **Done when:** the test scene renders correctly (screenshot), converted data is
   verified with an asymmetric texture (readable text, correct winding), and
   `--screenshot` produces a deterministic PNG.
@@ -184,11 +187,12 @@ A task is done only when:
   without crashing.
 
 - [ ] **T1.8 Data diagnostics**
-  `--check-meshes` (T1.1) covers world/static mesh conversion. Extend the
-  diagnostics suite with `--check-models` / `--check-assets` / `--dump-data`:
-  walk models, textures and scripts; report missing references, invalid weights,
-  degenerate triangles, bone counts and unsupported features as a summary and
-  optional JSON. Never write into the installation.
+  `--check-meshes` (T1.1) and `--check-textures` (T1.2) cover world meshes and
+  a texture sample. Extend the diagnostics suite with `--check-models` /
+  `--check-assets` / `--dump-data`: walk models, textures and scripts; report
+  missing references, invalid weights, degenerate triangles, bone counts and
+  unsupported features as a summary and optional JSON. Never write into the
+  installation.
   **Done when:** the commands run on a real install and their output is used in
   the task evidence; docs describe the commands and their exit codes.
 
@@ -430,6 +434,7 @@ A task is done only when:
 ## Backlog / ideas (not scheduled)
 
 - GOG/other launcher install detection and an interactive folder picker.
+- Texture frame animation (`loadFrames`) for animated materials.
 - Original Gothic UI replication: script-created menus, `.FNT` fonts, authentic
   inventory/journal/menu layouts and art.
 - Portal-based visibility from the BSP tree.

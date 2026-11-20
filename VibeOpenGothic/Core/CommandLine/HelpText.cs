@@ -2,7 +2,7 @@ namespace VibeOpenGothic.Core.CommandLine;
 
 public static class HelpText
 {
-    public const string Value = """
+	public const string Value = """
         VibeOpenGothic - Gothic II: Night of the Raven client
 
         Usage:
@@ -21,6 +21,7 @@ public static class HelpText
           --data-dir <path>  Settings, log and save directory
           --probe            Print installation diagnostics and exit
           --check-meshes     Convert every ZEN world mesh and report counts
+          --check-textures   Decode a sample of TEX files and report dimensions
           --help             Show this help
           --version          Show version information
 

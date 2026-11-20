@@ -7,72 +7,72 @@ namespace VibeOpenGothic.Core.Timing;
 /// </summary>
 public sealed class FixedStepRunner
 {
-    private const double Epsilon = 1e-9;
+	private const double Epsilon = 1e-9;
 
-    private readonly double _stepSeconds;
-    private readonly int _maxStepsPerFrame;
-    private double _accumulator;
+	private readonly double _stepSeconds;
+	private readonly int _maxStepsPerFrame;
+	private double _accumulator;
 
-    public FixedStepRunner(TimeSpan step, int maxStepsPerFrame = 4)
-    {
-        if (step <= TimeSpan.Zero)
-        {
-            throw new ArgumentOutOfRangeException(nameof(step), "The step must be positive.");
-        }
+	public FixedStepRunner(TimeSpan step, int maxStepsPerFrame = 4)
+	{
+		if (step <= TimeSpan.Zero)
+		{
+			throw new ArgumentOutOfRangeException(nameof(step), "The step must be positive.");
+		}
 
-        if (maxStepsPerFrame <= 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(maxStepsPerFrame), "At least one step is required.");
-        }
+		if (maxStepsPerFrame <= 0)
+		{
+			throw new ArgumentOutOfRangeException(nameof(maxStepsPerFrame), "At least one step is required.");
+		}
 
-        _stepSeconds = step.TotalSeconds;
-        _maxStepsPerFrame = maxStepsPerFrame;
-    }
+		_stepSeconds = step.TotalSeconds;
+		_maxStepsPerFrame = maxStepsPerFrame;
+	}
 
-    public double StepSeconds => _stepSeconds;
+	public double StepSeconds => _stepSeconds;
 
-    public int MaxStepsPerFrame => _maxStepsPerFrame;
+	public int MaxStepsPerFrame => _maxStepsPerFrame;
 
-    /// <summary>
-    /// Adds the elapsed frame time and invokes <paramref name="step"/> once per
-    /// fixed step. Time beyond the catch-up cap is discarded.
-    /// </summary>
-    /// <returns>The number of logic steps executed.</returns>
-    public int Advance(double elapsedSeconds, Action<double> step)
-    {
-        ArgumentNullException.ThrowIfNull(step);
+	/// <summary>
+	/// Adds the elapsed frame time and invokes <paramref name="step"/> once per
+	/// fixed step. Time beyond the catch-up cap is discarded.
+	/// </summary>
+	/// <returns>The number of logic steps executed.</returns>
+	public int Advance(double elapsedSeconds, Action<double> step)
+	{
+		ArgumentNullException.ThrowIfNull(step);
 
-        if (!double.IsFinite(elapsedSeconds) || elapsedSeconds < 0)
-        {
-            elapsedSeconds = 0;
-        }
+		if (!double.IsFinite(elapsedSeconds) || elapsedSeconds < 0)
+		{
+			elapsedSeconds = 0;
+		}
 
-        var maxElapsed = _stepSeconds * _maxStepsPerFrame;
-        if (elapsedSeconds > maxElapsed)
-        {
-            elapsedSeconds = maxElapsed;
-        }
+		var maxElapsed = _stepSeconds * _maxStepsPerFrame;
+		if (elapsedSeconds > maxElapsed)
+		{
+			elapsedSeconds = maxElapsed;
+		}
 
-        _accumulator += elapsedSeconds;
+		_accumulator += elapsedSeconds;
 
-        var steps = 0;
-        while (steps < _maxStepsPerFrame && _accumulator + Epsilon >= _stepSeconds)
-        {
-            step(_stepSeconds);
-            _accumulator -= _stepSeconds;
-            steps++;
-        }
+		var steps = 0;
+		while (steps < _maxStepsPerFrame && _accumulator + Epsilon >= _stepSeconds)
+		{
+			step(_stepSeconds);
+			_accumulator -= _stepSeconds;
+			steps++;
+		}
 
-        if (_accumulator < 0)
-        {
-            _accumulator = 0;
-        }
+		if (_accumulator < 0)
+		{
+			_accumulator = 0;
+		}
 
-        return steps;
-    }
+		return steps;
+	}
 
-    public void Reset()
-    {
-        _accumulator = 0;
-    }
+	public void Reset()
+	{
+		_accumulator = 0;
+	}
 }

@@ -5,8 +5,8 @@ namespace VibeOpenGothic;
 /// </summary>
 public static class BootstrapInfo
 {
-    public const string Name = "VibeOpenGothic";
+	public const string Name = "VibeOpenGothic";
 
-    public static string Version { get; } =
-        typeof(BootstrapInfo).Assembly.GetName().Version?.ToString(3) ?? "0.0.0";
+	public static string Version { get; } =
+		typeof(BootstrapInfo).Assembly.GetName().Version?.ToString(3) ?? "0.0.0";
 }
