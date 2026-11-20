@@ -24,12 +24,14 @@ We never write into the installation. Settings, saves and logs live in
    Linux via Proton.
 5. Interactive folder picker (when a UI is available).
 
-The application shell (T0.2) already implements steps 1 and 3 and validates
-`System/Gothic.ini` plus the `Data` directory. T0.3 adds the environment
-variable, common-location discovery, version detection and VFS mounting.
+Discovery uses the command line, `VOG_GOTHIC_PATH`, settings, and finally
+common locations (including Steam library folders). The interactive folder
+picker is deferred until a UI exists.
 
-Validation target: the root must contain `System/Gothic.ini` and at least one
-non-empty `Data/*.vdf`. On failure, print the searched paths and exit with a
+Validation: the root must contain `System/Gothic.ini`, `Data/`, `_work/Data`
+and `_work/Data/Scripts/_compiled`, and at least one non-empty `Data/*.vdf`.
+Directory and file names are resolved case-insensitively because retail installs
+use `system` (lowercase). On failure, print the searched paths and exit with a
 readable error. `--probe` prints the resolved root without starting a game.
 
 ### Version detection
@@ -43,28 +45,36 @@ targets Gothic2NotR; Gothic 1 support is best-effort (T5.4).
 ## Virtual file system
 
 All game assets are addressed by a normalized, case-insensitive path
-(`\`-separated, no leading slash). `GameVfs` wraps `ZenKit.Vfs` and exposes:
+(`/`-separated, no leading slash in documentation; the implementation accepts
+both separators and a leading slash). `IGameVfs` wraps `ZenKit.Vfs`:
 
 ```csharp
-bool Exists(string path);
-Stream OpenRead(string path);
-IReadOnlyList<string> List(string directory, string extension); // optional
+bool FileExists(string nameOrPath);
+bool DirectoryExists(string path);
+Stream OpenRead(string nameOrPath);
+VfsFileEntry? Find(string nameOrPath);
+IEnumerable<VfsFileEntry> EnumerateFiles();
 ```
 
-Mount order:
+Bare names (e.g. `GOTHIC.DAT`) resolve by file name anywhere in the VFS, like
+the original engine. Paths resolve from the root.
 
-1. Base archives from `Data/`, enumerated recursively, skipping language-neutral
-   `.NX.` directories.
-2. Archives ordered so that newer files win (ZenKit `VfsOverwriteBehavior`),
-   matching OpenGothic.
-3. Mod archives from `modfile.ini` (`[FILES] VDF=`), last and in listed order.
-   If the key is present, only listed `.mod` files are mounted.
-4. `_work` host directory as `/_work` read-only (loose-file overrides).
+Mount order and precedence:
 
-Mount errors are logged and skipped; the game refuses to start only if
-`GOTHIC.DAT` cannot be found. `--probe` lists every mounted archive with file
-counts and a timestamp, which is the first thing to check for "missing asset"
-bug reports.
+1. Enumerate `Data/` recursively for non-empty `.vdf` and `.mod` files,
+   skipping language-neutral `.NX.` directories.
+2. Include `.mod` files only when a `-game:` manifest is active (see Mods).
+3. Sort by descending priority: mods first, then newer VDF header timestamps,
+   then enumeration order. Mount with ZenKit's `Older` overwrite behavior, so
+   the first archive to provide a path wins.
+4. Mount the `_work` host directory at `/_work` with `None`, so loose files
+   fill gaps but never override archives. This matches OpenGothic.
+
+Mount errors are logged and skipped. The game refuses to start when
+`GOTHIC.DAT` (or the mod's `GAME` file) cannot be resolved. `--probe` lists every
+archive with size and timestamp, the total VFS file count, the resolved version
+and sample assets; it is the first thing to check for "missing asset" bug
+reports.
 
 ## File formats
 
@@ -114,6 +124,8 @@ regular Daedalus scripting.
 - `modfile.ini` keys: `[FILES] GAME`, `VDF`, `OUTPUTUNITS`;
   `[SETTINGS] WORLD`, `PLAYER`.
 - Command line: `-game:<modfile.ini>`; `--` style aliases are also accepted.
+- Without `-game:`, `.mod` files in `Data` are ignored, matching OpenGothic and
+  avoiding accidental G2 Classic overrides on NotR installs.
 - The selected mod's `GAME` value replaces `GOTHIC.DAT`.
 - Never modify the mod or the installation; write caches elsewhere.
 

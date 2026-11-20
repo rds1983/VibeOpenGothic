@@ -77,7 +77,8 @@ Program
   -> CommandLineParser
   -> AppPaths -> Log.Start -> CrashHandler.Install
   -> SettingsStore.Load
-  -> GothicInstallLocator -> (T0.3: GameVfs.Mount)
+  -> GothicInstallLocator (CLI, VOG_GOTHIC_PATH, settings, known locations)
+  -> ZenKitGameVfs.Mount (ordered VDFs + _work)
   -> GothicGame : Microsoft.Xna.Framework.Game
        Core.Timing.FixedStepRunner   60 Hz logic, max 4 catch-up steps
        Core.Timing.FrameStats        frame/logic counters for the title and logs
@@ -140,9 +141,10 @@ VFS bytes -> ZenKit parse -> AssetConverter -> CPU asset (immutable) -> cache
 
 ## Error handling and diagnostics
 
-- `ILogSink` with console + `log.txt` sinks. The file lives in the application
-  data directory (`%LOCALAPPDATA%\VibeOpenGothic` by default, `--data-dir`
-  overrides). Debug logging is enabled with `-devmode`.
+- `ILogSink` with console + `log.txt` sinks. Categories are short names
+  (`App`, `CLI`, `Settings`, `Data`, `VFS`, `Render`, `Crash`). The file lives in
+  the application data directory (`%LOCALAPPDATA%\VibeOpenGothic` by default,
+  `--data-dir` overrides). Debug logging is enabled with `-devmode`.
 - User errors (bad arguments, missing installation) are printed as one readable
   line plus the log path and exit with code 1 or 2. They never print a stack
   trace or open a modal dialog.
@@ -153,12 +155,13 @@ VFS bytes -> ZenKit parse -> AssetConverter -> CPU asset (immutable) -> cache
   `AssetException` with the asset path, and logged with context.
 - Gameplay errors caused by broken scripts are logged and recovered from where
   possible (the original tolerates many missing externals).
-- `--probe` prints install version, mounted archives, file counts and resolves a
-  set of known assets. `--dump-data` extracts converted meshes/textures for
+- `--probe` resolves the installation, prints its version, archive list and file
+  count, and resolves `GOTHIC.DAT`, the startup world, a sample texture/model and
+  the cutscene output units. `--dump-data` extracts converted meshes/textures for
   debugging (developer-only output, never committed).
 - Performance counters: frame time, update time, loaded asset count, draw calls,
-  triangle count, GC allocations per frame. T0.2 shows FPS and frame time in the
-  window title.
+  triangle count, GC allocations per frame. The window title currently shows FPS
+  and frame time.
 
 ## Coding conventions
 

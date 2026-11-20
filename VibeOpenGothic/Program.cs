@@ -4,7 +4,9 @@ using VibeOpenGothic.Core.CommandLine;
 using VibeOpenGothic.Core.Diagnostics;
 using VibeOpenGothic.Core.Logging;
 using VibeOpenGothic.Core.Settings;
-using VibeOpenGothic.Data;
+using VibeOpenGothic.Data.Installs;
+using VibeOpenGothic.Data.Probe;
+using VibeOpenGothic.Data.Vfs;
 
 namespace VibeOpenGothic;
 
@@ -88,7 +90,22 @@ internal static class Program
             }
 
             var settings = settingsResult.Settings;
-            var installResult = GothicInstallLocator.Locate(options.GothicPath, settings.GothicPath);
+            var environmentPath = Environment.GetEnvironmentVariable("VOG_GOTHIC_PATH");
+            var knownCandidates = string.IsNullOrWhiteSpace(options.GothicPath)
+                ? KnownInstallLocations.Enumerate()
+                : Array.Empty<string>();
+            var installResult = GothicInstallLocator.Locate(
+                options.GothicPath,
+                environmentPath,
+                settings.GothicPath,
+                options.VersionOverride,
+                options.ModFile,
+                knownCandidates);
+
+            foreach (var warning in installResult.Warnings)
+            {
+                Log.Warning("Data", warning);
+            }
 
             if (!installResult.Success)
             {
@@ -101,6 +118,7 @@ internal static class Program
                 if (installResult.SearchedPaths.Count > 0)
                 {
                     Log.Warning("Data", $"Searched: {string.Join(", ", installResult.SearchedPaths)}");
+                    Console.Error.WriteLine($"Searched: {string.Join(", ", installResult.SearchedPaths)}");
                 }
 
                 Console.Error.WriteLine($"See log: {paths.LogFilePath}");
@@ -109,16 +127,40 @@ internal static class Program
 
             var install = installResult.Install!;
             Log.Info("Data", $"Gothic root: {install.RootPath}");
+            Log.Info("Data", $"Gothic version: {install.Version}");
+            Log.Info("Data", $"Archives: {install.Archives.Count}");
+
+            using var vfs = ZenKitGameVfs.Mount(install, out var mountWarnings);
+            foreach (var warning in mountWarnings)
+            {
+                Log.Warning("VFS", warning);
+            }
+
+            Log.Info("VFS", $"Mounted {install.Archives.Count} archive(s)");
 
             if (options.Probe)
             {
-                PrintProbe(install, options);
-                return ExitSuccess;
+                var probe = InstallProbe.Create(install, vfs);
+                foreach (var line in probe.Lines)
+                {
+                    Console.WriteLine(line);
+                }
+
+                return probe.Success ? ExitSuccess : ExitFailure;
+            }
+
+            if (!vfs.FileExists(install.DefaultGameDatName))
+            {
+                var message = $"Gothic scripts not found: '{install.DefaultGameDatName}'.";
+                Log.Error("Data", message);
+                PrintError(message);
+                Console.Error.WriteLine($"See log: {paths.LogFilePath}");
+                return ExitInstallError;
             }
 
             settings.GothicPath = install.RootPath;
             var windowed = options.Windowed || settings.Windowed;
-            var gameOptions = new GothicGameOptions(install, settings, options, windowed);
+            var gameOptions = new GothicGameOptions(install, settings, options, windowed, vfs);
 
             Log.Info(
                 "App",
@@ -160,28 +202,6 @@ internal static class Program
         Console.WriteLine($"{BootstrapInfo.Name} {BootstrapInfo.Version}");
         Console.WriteLine($"Runtime: {RuntimeInformation.FrameworkDescription}");
         Console.WriteLine($"OS: {RuntimeInformation.OSDescription}");
-    }
-
-    private static void PrintProbe(GothicInstall install, CommandLineOptions options)
-    {
-        var vdfFiles = install.EnumerateTopLevelVdfFiles();
-
-        Console.WriteLine($"Gothic root: {install.RootPath}");
-        Console.WriteLine($"  System/Gothic.ini: {(install.HasSystemIni ? "found" : "missing")}");
-        Console.WriteLine($"  Data directory:    {(install.HasDataDirectory ? "found" : "missing")}");
-        Console.WriteLine($"  top-level VDFs:    {vdfFiles.Count}");
-
-        foreach (var file in vdfFiles)
-        {
-            Console.WriteLine($"    {Path.GetFileName(file)}");
-        }
-
-        Console.WriteLine($"  version override:  {options.VersionOverride}");
-        Console.WriteLine($"  mod manifest:      {options.ModFile ?? "(none)"}");
-        Console.WriteLine($"  startup world:     {options.StartupWorld ?? "(default)"}");
-        Console.WriteLine($"  save to load:      {options.SaveToLoad ?? "(none)"}");
-
-        Log.Info("Data", $"Probe: {vdfFiles.Count} top-level VDF(s), version={options.VersionOverride}");
     }
 
     private static string QuoteForLog(string argument)

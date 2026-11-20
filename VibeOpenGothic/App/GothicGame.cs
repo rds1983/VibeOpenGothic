@@ -82,7 +82,6 @@ public sealed class GothicGame : Game
         Log.Info(
             "App",
             $"MonoGame initialized: {WindowWidth}x{WindowHeight}, windowed={IsWindowed}, renderer={GraphicsDevice.GraphicsProfile}");
-        Log.Info("Data", $"Gothic root: {_options.Install.RootPath}");
     }
 
     protected override void Update(GameTime gameTime)

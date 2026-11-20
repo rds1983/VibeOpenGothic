@@ -30,11 +30,11 @@ A task is done only when:
 
 ## Current focus
 
-**T0.3 - Install discovery and VFS.** T0.2 is complete.
+**T1.0 - LHS-to-RHS conversion layer.** T0.3 is complete.
 
-> T0.2 is complete: the app has a MonoGame host, CLI, logging, settings and
-> crash handling. T0.3 adds full install discovery, version detection and VFS
-> mounting, including case-insensitive directory names (`system` vs `System`).
+> T0.3 is complete: installs are discovered, versions detected and game data is
+> mounted behind `IGameVfs`. T1.0 establishes the coordinate conversion layer
+> before mesh and model data are converted.
 
 ## Milestone overview
 
@@ -75,7 +75,7 @@ A task is done only when:
   a stack trace; `--help` works; argument parser and settings round-trip are
   unit tested.
 
-- [ ] **T0.3 Install discovery and VFS**
+- [x] **T0.3 Install discovery and VFS** (2026-11-20)
   Locate the installation (CLI, `VOG_GOTHIC_PATH`, settings, known paths),
   validate it, detect Gothic version, mount VDFs and `_work` with ZenKit using
   the ordering in Design/02, handle mods via `modfile.ini`, and normalize paths.
@@ -375,9 +375,9 @@ A task is done only when:
 ## M5 - Hardening
 
 - [ ] **T5.1 Performance and memory**
-  Instancing, culling, LOD selection, asynchronous/streamed loading, reduced
-  per-frame allocations, pooled buffers, and profiling of Khorinis and the
-  add-on world. Target 60 FPS at 1080p on modest hardware.
+  Instancing, culling, LOD selection, asynchronous/streamed loading, VFS lookup
+  indexing/caching, reduced per-frame allocations, pooled buffers, and profiling
+  of Khorinis and the add-on world. Target 60 FPS at 1080p on modest hardware.
   **Done when:** benchmark reports and before/after numbers are documented;
   frame-time spikes during world streaming are bounded.
 
@@ -409,6 +409,7 @@ A task is done only when:
 
 ## Backlog / ideas (not scheduled)
 
+- GOG/other launcher install detection and an interactive folder picker.
 - Portal-based visibility from the BSP tree.
 - Hardware skinning alternatives for >72 bones.
 - Import/export of converted assets for debugging (glTF).

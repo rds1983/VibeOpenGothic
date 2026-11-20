@@ -4,7 +4,7 @@ C# reimplementation of **Gothic II: Night of the Raven**, ported from
 [OpenGothic](https://github.com/Try/OpenGothic). It runs the original game data;
 no game assets are bundled.
 
-**Status:** pre-alpha (application shell). The roadmap is in [TASKS.md](TASKS.md).
+**Status:** pre-alpha (install discovery and VFS). The roadmap is in [TASKS.md](TASKS.md).
 
 Key decisions:
 
@@ -44,8 +44,10 @@ dotnet run --project VibeOpenGothic -- -g "C:\Gothic II"
 ```
 
 The current build opens a window with a solid background; Escape or Alt+F4
-exits. Settings and `log.txt` are written to
-`%LOCALAPPDATA%\VibeOpenGothic` (override with `--data-dir`).
+exits. Gothic II is auto-detected from settings, `VOG_GOTHIC_PATH`, common
+paths and Steam library folders; `-g <path>` overrides detection. Settings and
+`log.txt` are written to `%LOCALAPPDATA%\VibeOpenGothic` (override with
+`--data-dir`).
 
 ## Repository layout
 
