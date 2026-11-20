@@ -30,10 +30,10 @@ A task is done only when:
 
 ## Current focus
 
-**T0.1 - Solution scaffold.** Everything else is blocked on it.
+**T0.2 - Application shell.** T0.1 is complete.
 
-> The initial commit contains documentation, license and repository setup only;
-> there is no code yet.
+> T0.1 is complete: the solution builds, tests pass, and the entry point runs.
+> T0.2 adds the MonoGame host, command line, logging and settings.
 
 ## Milestone overview
 
@@ -50,7 +50,7 @@ A task is done only when:
 
 ## M0 - Foundation
 
-- [ ] **T0.1 Solution scaffold**
+- [x] **T0.1 Solution scaffold** (2026-11-20)
   Create `VibeOpenGothic.slnx`, `VibeOpenGothic/VibeOpenGothic.csproj`
   (WinExe, net8.0), `VibeOpenGothic.Tests/VibeOpenGothic.Tests.csproj` (xUnit),
   `Directory.Build.props` (nullable, warnings as errors, deterministic builds),
@@ -59,8 +59,9 @@ A task is done only when:
   BepuPhysics 2.4.0. Add `.editorconfig`. `RuntimeIdentifiers` must include
   `win-x64;linux-x64;osx-x64` for ZenKit's native copy targets.
   **Done when:** `dotnet build VibeOpenGothic.slnx` and `dotnet test
-  VibeOpenGothic.slnx` succeed on a clean clone; the test project contains one
-  placeholder test; README build commands work.
+  VibeOpenGothic.slnx` succeed on a clean clone; the test project contains
+  scaffold smoke tests that load every required package; README build commands
+  work.
 
 - [ ] **T0.2 Application shell**
   MonoGame `Game` subclass with a fixed-step logic loop and render loop; window,
@@ -86,8 +87,10 @@ A task is done only when:
 
 - [ ] **T0.4 CI and publishing**
   GitHub Actions workflow: restore, build Release (warnings as errors), run
-  tests, publish win-x64 self-contained, upload artifacts. Ensure ZenKit native
-  libraries are present in the publish output. Add a `dotnet test` TRX artifact.
+  tests, publish win-x64 self-contained, upload artifacts. Use the .NET 10 SDK
+  (or 9.0.200+) and pin it explicitly; the .NET 8 SDK cannot read `.slnx`.
+  Ensure ZenKit native libraries are present in the publish output. Add a `dotnet
+  test` TRX artifact.
   **Done when:** CI is green on a clean runner without game data; the published
   zip starts and prints `--version` on Windows.
 

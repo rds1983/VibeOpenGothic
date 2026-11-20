@@ -1,0 +1,19 @@
+<Project>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageVersion Include="BepuPhysics" Version="2.4.0" />
+    <PackageVersion Include="DigitalRiseModel.MonoGame" Version="0.7.6" />
+    <PackageVersion Include="MonoGame.Framework.DesktopGL" Version="3.8.0.1641" />
+    <PackageVersion Include="Myra" Version="1.6.8" />
+    <PackageVersion Include="ZenKit" Version="1.3.0-cs.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.2" />
+    <PackageVersion Include="xunit" Version="2.9.3" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="2.8.2" />
+  </ItemGroup>
+</Project>

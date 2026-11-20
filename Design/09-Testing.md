@@ -31,6 +31,10 @@ VibeOpenGothic.Tests/
     FakePresenter.cs
 ```
 
+The test project references `ZenKit` directly in addition to the game project.
+That is intentional: it makes ZenKit's native library part of the test output so
+data tests can call it without extra setup.
+
 Test naming: `Method_Scenario_ExpectedResult`.
 One behavior per test; use `[Theory]` for data tables.
 
@@ -40,16 +44,19 @@ One behavior per test; use `[Theory]` for data tables.
 mount point. Tests that need it:
 
 ```csharp
+[SkippableFact]
 [Trait("Category", "RequiresGameData")]
 public void Loads_newworld()
 {
-    if (!_data.IsAvailable) Assert.Skip(_data.SkipReason);
+    Skip.IfNot(_data.IsAvailable, _data.SkipReason);
+
     ...
 }
 ```
 
-(`Assert.Skip` is xUnit v3; if the project stays on xUnit 2, add
-`Xunit.SkippableFact` and use `[SkippableFact]`.)
+The scaffold uses xUnit 2.9.3, so data tests need the `Xunit.SkippableFact`
+package (add it with the first data test). `Assert.Skip` is only available in
+xUnit v3.
 
 Rules:
 

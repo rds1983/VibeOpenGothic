@@ -28,7 +28,8 @@ Key decisions:
 
 ## Requirements
 
-- .NET 8 SDK
+- .NET SDK 9.0.200 or newer (10.x recommended). The projects target net8.0; the
+  `.slnx` solution format is not supported by the .NET 8 SDK.
 - A legitimate Gothic II: Night of the Raven installation (GOG, Steam or retail)
 - Windows x64 (ZenKit ships x64 native binaries); Linux x64 is expected to work but untested
 
@@ -40,7 +41,7 @@ dotnet test VibeOpenGothic.slnx
 dotnet run --project VibeOpenGothic -- -g "C:\Gothic II"
 ```
 
-The solution scaffold lands in task T0.1, so these commands do not work until then.
+The entry point is a stub until T0.2: running it prints a version line and exits.
 
 ## Repository layout
 

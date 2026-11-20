@@ -6,14 +6,16 @@
 VibeOpenGothic.slnx
   VibeOpenGothic/            WinExe, net8.0, all game code
   VibeOpenGothic.Tests/      xUnit, net8.0, references the game project
+.editorconfig               code style and formatting rules
 Directory.Build.props        shared compiler settings
 Directory.Packages.props     central package versions
 ```
 
-`VibeOpenGothic.slnx` is the new XML solution format supported by the .NET 8+
-SDK. One executable project is intentional: the engine is a monolith with
-strict internal layering. Splitting into assemblies is allowed later if compile
-times or dependency enforcement justify it, but not before.
+`VibeOpenGothic.slnx` is the XML solution format supported by .NET SDK 9.0.200+
+(10.x recommended). The projects themselves target net8.0. One executable
+project is intentional: the engine is a monolith with strict internal layering.
+Splitting into assemblies is allowed later if compile times or dependency
+enforcement justify it, but not before.
 
 ### Package baseline
 
@@ -24,7 +26,9 @@ times or dependency enforcement justify it, but not before.
 | DigitalRiseModel.MonoGame | 0.7.6 | Runtime model/bone/animation containers |
 | ZenKit | 1.3.0-cs.1 | ZenKitCS; native win-x64/linux-x64/osx-x64/android-arm64 |
 | BepuPhysics | 2.4.0 | Brings BepuUtilities |
-| xunit / Microsoft.NET.Test.Sdk | latest stable | Test project only |
+| xunit | 2.9.3 | Test project only |
+| xunit.runner.visualstudio | 2.8.2 | Test project only |
+| Microsoft.NET.Test.Sdk | 17.14.2 | Test project only |
 
 ZenKit forces a `RuntimeIdentifier` per OS through its build targets. Set
 `RuntimeIdentifiers` to `win-x64;linux-x64;osx-x64` in the game project and let
