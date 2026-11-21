@@ -15,12 +15,19 @@ public partial class DebugOverlay
 		_fpsLabel.TextColor = Color.White;
 		_drawCallsLabel.TextColor = Color.White;
 		_polygonsLabel.TextColor = Color.White;
+		_culledLabel.TextColor = Color.White;
 	}
 
-	public void SetStats(float fps, int drawCalls, int polygons)
+	public void SetStats(
+		float fps,
+		int drawCalls,
+		int polygons,
+		int culledBatches,
+		int culledInstances)
 	{
 		_fpsLabel.Text = $"FPS: {fps:0.0}";
 		_drawCallsLabel.Text = $"Draw calls: {drawCalls:N0}";
 		_polygonsLabel.Text = $"Polygons: {polygons:N0}";
+		_culledLabel.Text = $"Culled: {culledBatches:N0} batches / {culledInstances:N0} instances";
 	}
 }

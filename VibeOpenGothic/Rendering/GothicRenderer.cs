@@ -64,6 +64,10 @@ public sealed class GothicRenderer : IDisposable
 
 	public int LastDrawnPolygons => _forward.Polygons;
 
+	public int LastCulledBatches => _forward.CulledBatches;
+
+	public int LastCulledInstances => _forward.CulledInstances;
+
 	public void Draw(GameTime gameTime)
 	{
 		ArgumentNullException.ThrowIfNull(gameTime);

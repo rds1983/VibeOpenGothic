@@ -19,6 +19,7 @@ public sealed class ForwardRenderer : IDisposable
 	private readonly BasicEffect _basic;
 	private readonly AlphaTestEffect _alphaTest;
 	private readonly SkinnedEffect _skinned;
+	private BoundingFrustum _frustum = new(Matrix.Identity);
 	private DepthStencilState _savedDepthStencilState = null!;
 	private BlendState _savedBlendState = null!;
 	private RasterizerState _savedRasterizerState = null!;
@@ -79,6 +80,39 @@ public sealed class ForwardRenderer : IDisposable
 
 	public int SkinnedDrawCalls { get; private set; }
 
+	public int CulledBatches { get; private set; }
+
+	public int CulledInstances { get; private set; }
+
+	public Vector3 CameraPosition { get; private set; }
+
+	public void RecordCulledBatch()
+	{
+		CulledBatches++;
+	}
+
+	public void RecordCulledInstance()
+	{
+		CulledInstances++;
+	}
+
+	public bool IsVisible(BoundingBox? bounds, float maxDistance)
+	{
+		if (bounds is null)
+		{
+			return true;
+		}
+
+		var value = bounds.Value;
+		if (!_frustum.Intersects(value))
+		{
+			return false;
+		}
+
+		var closest = Vector3.Clamp(CameraPosition, value.Min, value.Max);
+		return Vector3.DistanceSquared(closest, CameraPosition) <= maxDistance * maxDistance;
+	}
+
 	public void BeginFrame(Matrix view, Matrix projection)
 	{
 		ObjectDisposedException.ThrowIf(_disposed, this);
@@ -91,6 +125,10 @@ public sealed class ForwardRenderer : IDisposable
 		Polygons = 0;
 		StaticDrawCalls = 0;
 		SkinnedDrawCalls = 0;
+		CulledBatches = 0;
+		CulledInstances = 0;
+		_frustum = new BoundingFrustum(view * projection);
+		CameraPosition = Matrix.Invert(view).Translation;
 
 		_savedDepthStencilState = _device.DepthStencilState;
 		_savedBlendState = _device.BlendState;

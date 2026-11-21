@@ -211,7 +211,9 @@ public sealed class GothicGame : Game
 				_ui.SetDebugStats(
 					(float)_frames.Fps,
 					_renderer.LastDrawCalls,
-					_renderer.LastDrawnPolygons);
+					_renderer.LastDrawnPolygons,
+					_renderer.LastCulledBatches,
+					_renderer.LastCulledInstances);
 			}
 
 			_ui.Render();
@@ -226,6 +228,16 @@ public sealed class GothicGame : Game
 
 		if (!_firstFrameLogged)
 		{
+			if (_renderer is not null)
+			{
+				Log.Info(
+					"Render",
+					$"First frame: {_renderer.LastDrawCalls} draws, " +
+					$"{_renderer.LastDrawnPolygons} polygons, " +
+					$"{_renderer.LastCulledBatches} culled batches, " +
+					$"{_renderer.LastCulledInstances} culled instances");
+			}
+
 			Log.Info("Render", "First frame presented");
 			_firstFrameLogged = true;
 		}
@@ -264,7 +276,9 @@ public sealed class GothicGame : Game
 				_ui.SetDebugStats(
 					(float)_frames.Fps,
 					_renderer.LastDrawCalls,
-					_renderer.LastDrawnPolygons);
+					_renderer.LastDrawnPolygons,
+					_renderer.LastCulledBatches,
+					_renderer.LastCulledInstances);
 				_ui.Render();
 			}
 		}

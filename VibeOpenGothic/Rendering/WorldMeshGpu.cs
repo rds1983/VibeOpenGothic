@@ -107,12 +107,17 @@ public sealed class WorldMeshGpu : IDisposable
 					ranges[^1] = previous with
 					{
 						PrimitiveCount = previous.PrimitiveCount + primitiveCount,
+						Bounds = BoundingBox.CreateMerged(previous.Bounds, subMesh.Bounds),
 					};
 					continue;
 				}
 			}
 
-			ranges.Add(new DrawRange(subMesh.IndexOffset, primitiveCount, subMesh.MaterialIndex));
+			ranges.Add(new DrawRange(
+				subMesh.IndexOffset,
+				primitiveCount,
+				subMesh.MaterialIndex,
+				subMesh.Bounds));
 		}
 
 		return ranges.ToArray();
@@ -121,5 +126,6 @@ public sealed class WorldMeshGpu : IDisposable
 	public readonly record struct DrawRange(
 		int StartIndex,
 		int PrimitiveCount,
-		int MaterialIndex);
+		int MaterialIndex,
+		BoundingBox Bounds);
 }

@@ -30,11 +30,10 @@ A task is done only when:
 
 ## Current focus
 
-**T1.9 - Visibility and batching baseline.** T1.8 is complete.
+**T2.1 - Static collision world.** T1.9 is complete.
 
-> T1.8 adds `--check-assets` / `--json` and `--dump-data`; the real-data scan
-> reports model, texture, animation, VOB, geometry and unsupported-feature
-> diagnostics. T1.9 starts with frustum/distance culling and batching.
+> T1.9 adds frustum/distance culling and overlay counters; the start view dropped
+> from 23,118 to 2,063 draw calls. T2.1 starts the Bepu static collision world.
 
 ## Milestone overview
 
@@ -238,12 +237,17 @@ A task is done only when:
   missing MANs, 16 missing textures, 0 missing VOB assets, 0 failures; 237
   tests. See Design/01 and Design/09.
 
-- [ ] **T1.9 Visibility and batching baseline**
+- [x] **T1.9 Visibility and batching baseline** (2026-11-21)
   Frustum culling for static batches and model instances, material-based
   batching, distance culling, and counters. Keep the BSP for later portal
   culling unless measurement demands it.
   **Done when:** a benchmark shows fewer draw calls and no correctness
   regressions; counters are visible in the debug overlay.
+  Result: world ranges, static instances and model instances are frustum/distance
+  culled; the overlay shows culled batches/instances. Start-view draw calls fell
+  from 23,118 to 2,063 (polygons 2,732,917 -> 537,101, 924 culled batches,
+  11,335 culled instances). The deterministic screenshot is unchanged; 237 tests.
+  See Design/07 and Design/09.
 
 ## M2 - Movement and world interaction
 

@@ -40,10 +40,11 @@ The first pass implements stages 1, 2 (visual only) and 5:
   T1.9/T2.x/T3.x.
 - `--check-world` reports 23 roots / 23,288 VOBs, 11,546 static instances from
   312 unique meshes, 2,959 waypoints, 473k world triangles and a start point on
-  G2 NotR. The frame submits about 2.73M triangles and 23k draw calls once all
-  static and model instances are drawn. The CPU load takes about 3.5 s; GPU
-  upload about 0.1 s for the world, 0.2 s for static meshes and 0.3 s for models
-  on the development machine.
+  G2 NotR. Without culling the frame submits about 2.73M triangles and 23k draw
+  calls once all static and model instances are drawn. T1.9 frustum/distance
+  culling reduces the start view to about 537k triangles and 2.1k draw calls.
+  The CPU load takes about 3.5 s; GPU upload about 0.1 s for the world, 0.2 s for
+  static meshes and 0.3 s for models on the development machine.
 - Lightmaps are present in the world data but not applied yet: the current
   vertex format has no lightmap UV, so `DualTextureEffect` waits for a dedicated
   lightmap-projection task.

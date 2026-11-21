@@ -36,9 +36,19 @@ public sealed class UiRoot : IDisposable
 		_debugOverlay.Visible = !_debugOverlay.Visible;
 	}
 
-	public void SetDebugStats(float fps, int drawCalls, int polygons)
+	public void SetDebugStats(
+		float fps,
+		int drawCalls,
+		int polygons,
+		int culledBatches,
+		int culledInstances)
 	{
-		_debugOverlay.SetStats(fps, drawCalls, polygons);
+		_debugOverlay.SetStats(
+			fps,
+			drawCalls,
+			polygons,
+			culledBatches,
+			culledInstances);
 	}
 
 	public void Render()

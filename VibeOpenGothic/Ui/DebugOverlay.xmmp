@@ -4,5 +4,6 @@
     <Label Id="_fpsLabel" Text="FPS: 0" TextColor="White" />
     <Label Id="_drawCallsLabel" Text="Draw calls: 0" TextColor="White" />
     <Label Id="_polygonsLabel" Text="Polygons: 0" TextColor="White" />
+    <Label Id="_culledLabel" Text="Culled: 0" TextColor="White" />
   </VerticalStackPanel>
 </Project>

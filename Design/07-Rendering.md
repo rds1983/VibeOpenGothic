@@ -64,7 +64,8 @@ and camera are static, so repeated runs are byte-identical.
   to the partial class.
 - `Ui/UiRoot` sets `MyraEnvironment.Game`, owns the `Desktop` and renders it after
   the 3D scene.
-- Lines: frame FPS, world/static draw calls and submitted triangles. The counters
+- Lines: frame FPS, world/static draw calls and submitted triangles plus culled
+  batch/instance counts. The counters
   are produced by `WorldRenderer` for the current frame and exclude Myra's own UI
   draws.
 - Labels refresh at 4 Hz to avoid per-frame string allocations. The overlay is
@@ -229,8 +230,26 @@ Gothic's lighting is mostly baked:
   discard geometry during conversion.
 - VOB static meshes are instanced by transform (draw the same buffer with
   different world matrices) where materials match.
-- First pass: no BSP/portal culling. Add frustum and distance culling in T1.9.
+- No BSP/portal culling yet. T1.9 adds frustum and distance culling; keep the BSP
+  for later portal work.
 - Never rebuild world buffers per frame or per camera move.
+
+### Visibility baseline (T1.9)
+
+- World ranges carry the merged submesh bounding box. Static VOB instances
+  cache their mesh bounds transformed by the VOB matrix, and skinned model
+  instances cache their bind-pose bounds transformed by the VOB matrix.
+- Every frame `ForwardRenderer` builds a `BoundingFrustum` from view*projection
+  and culls ranges, static instances and model instances by frustum plus a
+  140,000 cm distance test using the nearest point of the bounds.
+- Culled counts are exposed in the debug overlay as batches and instances.
+  Animation controllers still advance for culled model instances.
+- Material batching remains the T1.6 merged world ranges and shared `DrMesh`
+  instances; instanced material batching is deferred until measurement requires
+  it.
+- Start-view benchmark on G2 NotR: 2,063 draws / 537,101 polygons with 924
+  culled world batches and 11,335 culled instances, versus 23,118 / 2,732,917
+  without culling. The deterministic screenshot is unchanged.
 
 ## Skinned models
 
@@ -262,8 +281,8 @@ an optional parity feature (see
 ## Diagnostics
 
 - `F3` debug overlay: current-frame FPS, world/static draw calls and submitted
-  triangles (see T1.6 above), plus frame-time logs. Visible objects and texture
-  memory come later.
+  triangles plus culled batch/instance counts (see T1.9 above), plus frame-time
+  logs. Visible objects and texture memory come later.
 - Screenshot command (`--screenshot <path>`) writes a PNG with a fixed
   camera setup; screenshots are the evidence for visual tasks. `--screenshot`
   uses a fixed 1280x720 render target and exits after writing the file.

@@ -15,9 +15,11 @@ namespace VibeOpenGothic.Rendering;
 /// </summary>
 public sealed class WorldRenderer : IDisposable
 {
+	private const float MaxDrawDistance = 140000f;
+
 	private readonly WorldMeshGpu _worldMesh;
 	private readonly Dictionary<string, DrMesh> _staticMeshes = new(StringComparer.OrdinalIgnoreCase);
-	private readonly List<(DrMesh Mesh, Matrix Transform)> _instances = new();
+	private readonly List<(DrMesh Mesh, Matrix Transform, BoundingBox Bounds)> _instances = new();
 	private bool _disposed;
 
 	public WorldRenderer(
@@ -53,7 +55,10 @@ public sealed class WorldRenderer : IDisposable
 		{
 			if (_staticMeshes.TryGetValue(instance.MeshKey, out var mesh))
 			{
-				_instances.Add((mesh, instance.Transform));
+				_instances.Add((
+					mesh,
+					instance.Transform,
+					TransformBounds(mesh.BoundingBox, instance.Transform)));
 			}
 		}
 
@@ -69,6 +74,12 @@ public sealed class WorldRenderer : IDisposable
 
 		foreach (var range in _worldMesh.Ranges)
 		{
+			if (!renderer.IsVisible(range.Bounds, MaxDrawDistance))
+			{
+				renderer.RecordCulledBatch();
+				continue;
+			}
+
 			renderer.DrawRange(
 				_worldMesh.VertexBuffer,
 				_worldMesh.IndexBuffer,
@@ -78,8 +89,14 @@ public sealed class WorldRenderer : IDisposable
 				Matrix.Identity);
 		}
 
-		foreach (var (mesh, transform) in _instances)
+		foreach (var (mesh, transform, bounds) in _instances)
 		{
+			if (!renderer.IsVisible(bounds, MaxDrawDistance))
+			{
+				renderer.RecordCulledInstance();
+				continue;
+			}
+
 			foreach (var part in mesh.MeshParts)
 			{
 				renderer.DrawMeshPart(part, transform);
@@ -104,6 +121,20 @@ public sealed class WorldRenderer : IDisposable
 
 		_staticMeshes.Clear();
 		_instances.Clear();
+	}
+
+	private static BoundingBox TransformBounds(BoundingBox bounds, Matrix transform)
+	{
+		var min = new Vector3(float.PositiveInfinity);
+		var max = new Vector3(float.NegativeInfinity);
+		foreach (var corner in bounds.GetCorners())
+		{
+			var point = Vector3.Transform(corner, transform);
+			min = Vector3.Min(min, point);
+			max = Vector3.Max(max, point);
+		}
+
+		return new BoundingBox(min, max);
 	}
 
 	private static DrMesh CreateStaticMesh(
