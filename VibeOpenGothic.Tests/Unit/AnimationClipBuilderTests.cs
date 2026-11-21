@@ -29,16 +29,17 @@ public sealed class AnimationClipBuilderTests
 			});
 
 		using var model = BuildModel(source);
-		var clip = Assert.IsType<GothicAnimationClip>(model.Animations["S_TEST"]);
+		var clip = Assert.IsType<AnimationClip>(model.Animations["S_TEST"]);
+		var tag = Assert.IsType<AnimationClipTag>(clip.Tag);
 
-		Assert.True(clip.IsTransition);
+		Assert.True(tag.IsTransition);
 		Assert.Equal(TimeSpan.FromMilliseconds(200), clip.Duration);
 		Assert.Equal(2, clip.Channels.Length);
 		Assert.All(clip.Channels, channel => Assert.Equal(2, channel.Keyframes.Length));
 
 		var instance = new DrModelInstance(model);
 		var controller = new AnimationController(instance);
-		controller.StartClip(clip, clip.PlaybackFlags);
+		controller.StartClip(clip, tag.PlaybackFlags);
 		controller.Time = TimeSpan.FromMilliseconds(50);
 
 		var rootIndex = 0;
@@ -69,17 +70,18 @@ public sealed class AnimationClipBuilderTests
 			});
 
 		using var model = BuildModel(source);
-		var clip = Assert.IsType<GothicAnimationClip>(model.Animations["S_TEST"]);
+		var clip = Assert.IsType<AnimationClip>(model.Animations["S_TEST"]);
+		var tag = Assert.IsType<AnimationClipTag>(clip.Tag);
 
-		Assert.True(clip.IsLoop);
-		Assert.True((clip.PlaybackFlags & DigitalRiseModel.Animation.AnimationFlags.Looped) != 0);
+		Assert.True(tag.IsLoop);
+		Assert.True((tag.PlaybackFlags & DigitalRiseModel.Animation.AnimationFlags.Looped) != 0);
 		Assert.Equal(3, clip.Channels[0].Keyframes.Length);
 		Assert.Equal(TimeSpan.FromMilliseconds(200), clip.Channels[0].Keyframes[2].Time);
 		AssertNear(Vector3.Zero, clip.Channels[0].Keyframes[2].Pose.Translation);
 
 		var instance = new DrModelInstance(model);
 		var controller = new AnimationController(instance);
-		controller.StartClip(clip, clip.PlaybackFlags);
+		controller.StartClip(clip, tag.PlaybackFlags);
 		controller.Time = TimeSpan.FromMilliseconds(150);
 
 		AssertNear(
@@ -102,10 +104,11 @@ public sealed class AnimationClipBuilderTests
 			});
 
 		using var model = BuildModel(source);
-		var clip = Assert.IsType<GothicAnimationClip>(model.Animations["S_TEST"]);
+		var clip = Assert.IsType<AnimationClip>(model.Animations["S_TEST"]);
+		var tag = Assert.IsType<AnimationClipTag>(clip.Tag);
 
-		Assert.False(clip.IsLoop);
-		Assert.True(clip.IsTransition);
+		Assert.False(tag.IsLoop);
+		Assert.True(tag.IsTransition);
 		Assert.Equal(2, clip.Channels[0].Keyframes.Length);
 	}
 
@@ -127,9 +130,10 @@ public sealed class AnimationClipBuilderTests
 			});
 
 		using var model = BuildModel(source);
-		var clip = Assert.IsType<GothicAnimationClip>(model.Animations["S_TEST"]);
+		var clip = Assert.IsType<AnimationClip>(model.Animations["S_TEST"]);
+		var tag = Assert.IsType<AnimationClipTag>(clip.Tag);
 
-		var evt = Assert.Single(clip.Events);
+		var evt = Assert.Single(tag.Events);
 		Assert.Equal(GothicAnimationEventKind.Tag, evt.Kind);
 		Assert.Equal(TimeSpan.FromMilliseconds(100), evt.Time);
 		Assert.Equal("HitEnd", evt.Name);
@@ -186,7 +190,7 @@ public sealed class AnimationClipBuilderTests
 					Sample(new Vector3(5, 0, 0), Quaternion.Identity)),
 			});
 		var warnings = new List<string>();
-		var baseClip = Assert.IsType<GothicAnimationClip>(
+		var baseClip = Assert.IsType<AnimationClip>(
 			AnimationClipBuilder.Build(baseSource, new[] { 0 }, warnings));
 		var alias = new AnimationAliasSource(
 			"s_Alias",
@@ -198,14 +202,15 @@ public sealed class AnimationClipBuilderTests
 			GothicAnimationFlags.Rotate,
 			Reverse: false);
 
-		var aliasClip = Assert.IsType<GothicAnimationClip>(
+		var aliasClip = Assert.IsType<AnimationClip>(
 			AnimationClipBuilder.BuildAlias(alias, baseClip, warnings));
+		var aliasTag = Assert.IsType<AnimationClipTag>(aliasClip.Tag);
 
 		Assert.Equal("S_ALIAS", aliasClip.Name);
-		Assert.True(aliasClip.IsLoop);
-		Assert.Equal(3, aliasClip.Layer);
-		Assert.Equal(TimeSpan.FromMilliseconds(200), aliasClip.BlendIn);
-		Assert.Equal(TimeSpan.FromMilliseconds(300), aliasClip.BlendOut);
+		Assert.True(aliasTag.IsLoop);
+		Assert.Equal(3, aliasTag.Layer);
+		Assert.Equal(TimeSpan.FromMilliseconds(200), aliasTag.BlendIn);
+		Assert.Equal(TimeSpan.FromMilliseconds(300), aliasTag.BlendOut);
 		Assert.Same(baseClip.Channels, aliasClip.Channels);
 		Assert.Empty(warnings);
 	}

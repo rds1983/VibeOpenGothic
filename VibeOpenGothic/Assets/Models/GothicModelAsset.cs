@@ -1,4 +1,5 @@
 using DigitalRiseModel;
+using DigitalRiseModel.Animation;
 using VibeOpenGothic.Assets.Animation;
 using VibeOpenGothic.Assets.Materials;
 using VibeOpenGothic.Assets.Meshes;
@@ -19,7 +20,7 @@ public sealed class GothicModelAsset
 		DrModel model,
 		IReadOnlyList<GothicModelMesh> meshes,
 		IReadOnlyList<GothicModelAttachment> attachments,
-		GothicAnimationClip? idleClip,
+		AnimationClip? idleClip,
 		IReadOnlyList<string> warnings)
 	{
 		ArgumentException.ThrowIfNullOrWhiteSpace(key);
@@ -60,7 +61,7 @@ public sealed class GothicModelAsset
 
 	public IReadOnlyList<GothicModelAttachment> Attachments { get; }
 
-	public GothicAnimationClip? IdleClip { get; }
+	public AnimationClip? IdleClip { get; }
 
 	public IReadOnlyList<string> Warnings { get; }
 

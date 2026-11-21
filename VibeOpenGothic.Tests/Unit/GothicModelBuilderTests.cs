@@ -1,4 +1,5 @@
 using DigitalRiseModel;
+using DigitalRiseModel.Animation;
 using Microsoft.Xna.Framework;
 using VibeOpenGothic.Assets.Animation;
 using VibeOpenGothic.Assets.Skins;
@@ -169,9 +170,10 @@ public sealed class GothicModelBuilderTests
 		using var model = result.Model;
 
 		Assert.NotNull(model.Animations["s_base"]);
-		var alias = Assert.IsType<GothicAnimationClip>(model.Animations["s_alias"]);
-		Assert.True(alias.IsLoop);
-		Assert.Equal(2, alias.Layer);
+		var alias = Assert.IsType<AnimationClip>(model.Animations["s_alias"]);
+		var tag = Assert.IsType<AnimationClipTag>(alias.Tag);
+		Assert.True(tag.IsLoop);
+		Assert.Equal(2, tag.Layer);
 		Assert.Contains("S_ALIAS", model.Animations.Keys);
 	}
 

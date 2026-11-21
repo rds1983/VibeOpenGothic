@@ -12,7 +12,7 @@ namespace VibeOpenGothic.Assets.Animation;
 /// </summary>
 public static class AnimationClipBuilder
 {
-	public static GothicAnimationClip? Build(
+	public static AnimationClip? Build(
 		AnimationSource source,
 		IReadOnlyList<int> sourceToDrBone,
 		ICollection<string> warnings)
@@ -117,37 +117,47 @@ public static class AnimationClipBuilder
 				sourceEvent.Frames);
 		}
 
-		return new GothicAnimationClip(
+		return new AnimationClip(
 			name,
-			source.Name,
-			source.DataName,
 			FrameToTime(source.FrameCount, source.Fps),
-			channels.ToArray(),
-			source.FrameCount,
-			source.Fps,
-			source.FirstFrame,
-			source.LastFrame,
-			source.Layer,
-			source.Flags,
-			SecondsToTimeSpan(source.BlendInSeconds),
-			SecondsToTimeSpan(source.BlendOutSeconds),
-			source.Reverse,
-			isLoop,
-			source.HasComboWindow,
-			next,
-			CoordinateSystem.ToEnginePoint(source.RootMotionDelta),
-			source.HasRootMotion,
-			events);
+			channels.ToArray())
+		{
+			Tag = new AnimationClipTag(
+				source.Name,
+				source.DataName,
+				source.FrameCount,
+				source.Fps,
+				source.FirstFrame,
+				source.LastFrame,
+				source.Layer,
+				source.Flags,
+				SecondsToTimeSpan(source.BlendInSeconds),
+				SecondsToTimeSpan(source.BlendOutSeconds),
+				source.Reverse,
+				isLoop,
+				source.HasComboWindow,
+				next,
+				CoordinateSystem.ToEnginePoint(source.RootMotionDelta),
+				source.HasRootMotion,
+				events,
+				BuildPlaybackFlags(isLoop, source.Reverse)),
+		};
 	}
 
-	public static GothicAnimationClip? BuildAlias(
+	public static AnimationClip? BuildAlias(
 		AnimationAliasSource alias,
-		GothicAnimationClip baseClip,
+		AnimationClip baseClip,
 		ICollection<string> warnings)
 	{
 		ArgumentNullException.ThrowIfNull(alias);
 		ArgumentNullException.ThrowIfNull(baseClip);
 		ArgumentNullException.ThrowIfNull(warnings);
+
+		if (baseClip.Tag is not AnimationClipTag baseTag)
+		{
+			warnings.Add($"Animation alias '{alias.Name}' targets a clip without Gothic metadata.");
+			return null;
+		}
 
 		var name = NormalizeName(alias.Name);
 		if (name.Length == 0)
@@ -157,30 +167,31 @@ public static class AnimationClipBuilder
 		}
 
 		var next = NormalizeString(alias.Next);
-		var isLoop = !baseClip.HasComboWindow && next == name;
+		var isLoop = !baseTag.HasComboWindow && next == name;
 
 		// Channels are already remapped; share them with the alias clip.
-		return new GothicAnimationClip(
-			name,
-			alias.Name,
-			baseClip.DataName,
-			baseClip.Duration,
-			baseClip.Channels,
-			baseClip.FrameCount,
-			baseClip.Fps,
-			baseClip.FirstFrame,
-			baseClip.LastFrame,
-			alias.Layer,
-			alias.Flags,
-			SecondsToTimeSpan(alias.BlendInSeconds),
-			SecondsToTimeSpan(alias.BlendOutSeconds),
-			alias.Reverse,
-			isLoop,
-			baseClip.HasComboWindow,
-			next,
-			baseClip.RootMotionDelta,
-			baseClip.HasRootMotion,
-			baseClip.Events);
+		return new AnimationClip(name, baseClip.Duration, baseClip.Channels)
+		{
+			Tag = new AnimationClipTag(
+				alias.Name,
+				baseTag.DataName,
+				baseTag.FrameCount,
+				baseTag.Fps,
+				baseTag.FirstFrame,
+				baseTag.LastFrame,
+				alias.Layer,
+				alias.Flags,
+				SecondsToTimeSpan(alias.BlendInSeconds),
+				SecondsToTimeSpan(alias.BlendOutSeconds),
+				alias.Reverse,
+				isLoop,
+				baseTag.HasComboWindow,
+				next,
+				baseTag.RootMotionDelta,
+				baseTag.HasRootMotion,
+				baseTag.Events,
+				BuildPlaybackFlags(isLoop, alias.Reverse)),
+		};
 	}
 
 	public static string NormalizeName(string? name)
@@ -205,5 +216,21 @@ public static class AnimationClipBuilder
 	private static TimeSpan SecondsToTimeSpan(float seconds)
 	{
 		return TimeSpan.FromSeconds(float.IsFinite(seconds) ? Math.Max(0f, seconds) : 0f);
+	}
+
+	private static AnimationFlags BuildPlaybackFlags(bool isLoop, bool reverse)
+	{
+		var flags = AnimationFlags.None;
+		if (isLoop)
+		{
+			flags |= AnimationFlags.Looped;
+		}
+
+		if (reverse)
+		{
+			flags |= AnimationFlags.PlayBackwards;
+		}
+
+		return flags;
 	}
 }

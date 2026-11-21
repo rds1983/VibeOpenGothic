@@ -174,6 +174,8 @@ A task is done only when:
   returned asset; no behavior regression in clip conversion or pose evaluation.
   Result: runtime asset is `DrModel`; 217 tests pass; `--check-animations` still
   reports 0 non-finite transforms and 0 failures. See Design/03.
+  Follow-up (2026-11-21): DigitalRiseModel 0.7.7 exposed `AnimationClip.Tag`;
+  `GothicAnimationClip` was removed and its metadata moved to `AnimationClipTag`.
 
 - [x] **T1.5 Renderer bring-up** (2026-11-20)
   MonoGame window, `GraphicsDevice` lifecycle, right-handed `GothicCamera`, depth

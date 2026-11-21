@@ -21,9 +21,9 @@ enforcement justify it, but not before.
 
 | Package | Version | Notes |
 | --- | --- | --- |
-| MonoGame.Framework.DesktopGL | 3.8.0.1641 | Pinned: Myra 1.6.8 and DigitalRiseModel 0.7.6 reference this assembly version |
+| MonoGame.Framework.DesktopGL | 3.8.0.1641 | Pinned: Myra 1.6.8 and DigitalRiseModel 0.7.7 reference this assembly version |
 | Myra | 1.6.8 | UI; text rendering comes from its FontStashSharp dependency |
-| DigitalRiseModel.MonoGame | 0.7.6 | Runtime model/bone/animation containers |
+| DigitalRiseModel.MonoGame | 0.7.7 | Runtime model/bone/animation containers; `AnimationClip.Tag` carries Gothic metadata |
 | ZenKit | 1.3.0-cs.1 | ZenKitCS; native win-x64/linux-x64/osx-x64/android-arm64 |
 | BepuPhysics | 2.4.0 | Brings BepuUtilities |
 | xunit | 2.9.3 | Test project only |

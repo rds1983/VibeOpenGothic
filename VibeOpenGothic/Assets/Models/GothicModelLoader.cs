@@ -1,4 +1,5 @@
 using DigitalRiseModel;
+using DigitalRiseModel.Animation;
 using Microsoft.Xna.Framework;
 using VibeOpenGothic.Assets.Animation;
 using VibeOpenGothic.Assets.Materials;
@@ -303,22 +304,20 @@ public static class GothicModelLoader
 		return resources.MeshPaths[0];
 	}
 
-	private static GothicAnimationClip? SelectIdleClip(
+	private static AnimationClip? SelectIdleClip(
 		DrModel model,
 		ICollection<string> warnings)
 	{
 		foreach (var name in IdleCandidates)
 		{
-			if (model.Animations.TryGetValue(name, out var clip) &&
-				clip is GothicAnimationClip gothic)
+			if (model.Animations.TryGetValue(name, out var clip))
 			{
-				return gothic;
+				return clip;
 			}
 		}
 
 		var loops = model.Animations.Values
-			.OfType<GothicAnimationClip>()
-			.Where(clip => clip.IsLoop)
+			.Where(clip => clip.Tag is AnimationClipTag tag && tag.IsLoop)
 			.ToList();
 		if (loops.Count > 0)
 		{
@@ -326,7 +325,7 @@ public static class GothicModelLoader
 			return loops[0];
 		}
 
-		var first = model.Animations.Values.OfType<GothicAnimationClip>().FirstOrDefault();
+		var first = model.Animations.Values.FirstOrDefault();
 		if (first is not null)
 		{
 			warnings.Add("No idle or looping clip; using the first clip.");

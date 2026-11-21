@@ -263,10 +263,11 @@ Build the runtime skeleton from `MDH`:
   are broken with a warning and never hang the traversal.
 
 This follows OpenGothicSharp's shape: load directly into `DrModel`, return it,
-and build per-mesh skins. The deliberate differences are that we keep Gothic
-clip metadata in `GothicAnimationClip : AnimationClip` and use the MAN FPS;
-OpenGothicSharp stores only plain `AnimationClip`s and passes loop flags at the
-call site, which is not enough for scripts, events or root motion.
+and build per-mesh skins. The deliberate difference is that we keep Gothic clip
+metadata in `AnimationClipTag` on a plain `AnimationClip` (DigitalRiseModel
+0.7.7+ exposes `AnimationClip.Tag`) and use the MAN FPS. OpenGothicSharp stores
+only plain clips and passes loop flags at the call site, which is not enough for
+scripts, events or root motion.
 
 ### Model VOB runtime (T1.7)
 
@@ -277,11 +278,12 @@ call site, which is not enough for scripts, events or root motion.
   (normal for `HUMANS.MDS`, `Orc.mds` and other NPC models), the script must set
   a body mesh separately. `--spawn-model` uses the first mesh as a developer
   preview body.
-- The hierarchy becomes a `DrModel` with converted bones and `GothicAnimationClip`
-  entries. `SkinnedMeshBuilder` bakes every soft mesh with the builder's
-  source-to-DrModel bone map. The loader attaches one shared root `DrMesh` before
-  the `DrModel` is constructed, so `DrModel.Meshes` is populated; the renderer
-  fills it with skinned and static attachment parts after GPU upload.
+- The hierarchy becomes a `DrModel` with converted bones and plain
+  `AnimationClip` entries carrying `AnimationClipTag` metadata.
+  `SkinnedMeshBuilder` bakes every soft mesh with the builder's source-to-DrModel
+  bone map. The loader attaches one shared root `DrMesh` before the `DrModel` is
+  constructed, so `DrModel.Meshes` is populated; the renderer fills it with
+  skinned and static attachment parts after GPU upload.
 - `DrModelInstance.GetSkinTransforms` supplies the per-skin bone matrices; the
   renderer does not duplicate them in its tag payloads.
 - `ModelSkinBuilder` builds one `DrSkin` per soft mesh, compacting the bones
@@ -331,15 +333,16 @@ Each MDS animation has a MAN file named `<mds stem>-<animation name>.MAN`:
   Looped clips get an extra key at `duration` equal to frame zero so the last
   interval interpolates back to the start. `AnimationFlags.Looped` and
   `PlayBackwards` are derived from this metadata.
-- `GothicAnimationClip : AnimationClip` keeps the upper-case lookup name,
-  original source/data names, `next`, layer, flags, blend in/out, first/last
-  frame, event markers, root-motion delta and a `HasRootMotion` flag. It is
-  stored directly in `DrModel.Animations`; no separate clip dictionary or model
-  wrapper is needed. `aniAlias` entries reuse the base clip's channels under the
-  alias name. `aniComb` combo expansions are deferred to the combat task.
+- `AnimationClip` carries the upper-case lookup name, duration and channels;
+  `AnimationClip.Tag` holds `AnimationClipTag` with original source/data names,
+  `next`, layer, flags, blend in/out, first/last frame, event markers,
+  root-motion delta and a `HasRootMotion` flag. Clips live directly in
+  `DrModel.Animations`; no separate clip dictionary or model wrapper is needed.
+  `aniAlias` entries reuse the base clip's channels under the alias name.
+  `aniComb` combo expansions are deferred to the combat task.
 - `DrModel.Animations` uses a case-insensitive dictionary, so both `S_RUN` and
   `s_Run` resolve. `AnimationController.StartClip` accepts the clip directly;
-  `GothicAnimationClip.PlaybackFlags` supplies loop/reverse flags.
+  `AnimationClipTag.PlaybackFlags` supplies loop/reverse flags.
 
 Events are stored with their frame, converted time and name (tag type,
 sound/particle name, morph animation, camera tremor fields), but are not fired

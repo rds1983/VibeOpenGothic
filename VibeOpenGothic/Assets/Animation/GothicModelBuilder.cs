@@ -1,4 +1,5 @@
 using DigitalRiseModel;
+using DigitalRiseModel.Animation;
 using Microsoft.Xna.Framework;
 using VibeOpenGothic.Assets.Skins;
 
@@ -122,8 +123,8 @@ public static class GothicModelBuilder
 			drToSource[sourceToDr[index]] = index;
 		}
 
-		var clips = new Dictionary<string, GothicAnimationClip>(StringComparer.OrdinalIgnoreCase);
-		var baseClips = new Dictionary<string, GothicAnimationClip>(StringComparer.OrdinalIgnoreCase);
+		var clips = new Dictionary<string, AnimationClip>(StringComparer.OrdinalIgnoreCase);
+		var baseClips = new Dictionary<string, AnimationClip>(StringComparer.OrdinalIgnoreCase);
 
 		foreach (var source in animations.Animations)
 		{
@@ -154,13 +155,7 @@ public static class GothicModelBuilder
 			AddClip(clip, clips, baseClips, warnings, isAlias: true);
 		}
 
-		var modelAnimations = new Dictionary<string, DigitalRiseModel.Animation.AnimationClip>(
-			StringComparer.OrdinalIgnoreCase);
-		foreach (var pair in clips)
-		{
-			modelAnimations[pair.Key] = pair.Value;
-		}
-
+		var modelAnimations = clips;
 		model.Animations = modelAnimations;
 
 		return new GothicModelBuildResult(
@@ -225,15 +220,17 @@ public static class GothicModelBuilder
 	}
 
 	private static void AddClip(
-		GothicAnimationClip clip,
-		Dictionary<string, GothicAnimationClip> clips,
-		Dictionary<string, GothicAnimationClip> baseClips,
+		AnimationClip clip,
+		Dictionary<string, AnimationClip> clips,
+		Dictionary<string, AnimationClip> baseClips,
 		ICollection<string> warnings,
 		bool isAlias)
 	{
 		Add(clip.Name, clip);
 
-		var dataName = AnimationClipBuilder.NormalizeName(clip.DataName);
+		var dataName = clip.Tag is AnimationClipTag tag
+			? AnimationClipBuilder.NormalizeName(tag.DataName)
+			: string.Empty;
 		if (!isAlias &&
 			dataName.Length > 0 &&
 			!dataName.Equals(clip.Name, StringComparison.OrdinalIgnoreCase))
@@ -241,7 +238,7 @@ public static class GothicModelBuilder
 			Add(dataName, clip);
 		}
 
-		void Add(string key, GothicAnimationClip value)
+		void Add(string key, AnimationClip value)
 		{
 			if (clips.TryAdd(key, value))
 			{
@@ -252,9 +249,13 @@ public static class GothicModelBuilder
 			}
 			else
 			{
+				var sourceName = value.Tag is AnimationClipTag tag ? tag.SourceName : value.Name;
+				var existingName = clips[key].Tag is AnimationClipTag existingTag
+					? existingTag.SourceName
+					: clips[key].Name;
 				warnings.Add(
 					$"Animation name '{key}' is duplicated; keeping " +
-					$"'{clips[key].SourceName}' and ignoring '{value.SourceName}'.");
+					$"'{existingName}' and ignoring '{sourceName}'.");
 			}
 		}
 	}

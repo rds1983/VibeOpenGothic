@@ -69,7 +69,6 @@ public static class AnimationCheckTool
 				var model = loaded.Model;
 				var clips = model.Animations.Values
 					.Distinct()
-					.OfType<GothicAnimationClip>()
 					.ToList();
 				var scriptKeyframes = 0;
 				foreach (var clip in clips)
@@ -81,7 +80,8 @@ public static class AnimationCheckTool
 				}
 
 				animationCount += clips.Count;
-				loopCount += clips.Count(clip => clip.IsLoop);
+				loopCount += clips.Count(clip =>
+					clip.Tag is AnimationClipTag tag && tag.IsLoop);
 				aliasCount += loaded.Animations.Aliases.Count;
 				keyframeCount += scriptKeyframes;
 				maxBones = Math.Max(maxBones, model.Bones.Length);
@@ -102,7 +102,11 @@ public static class AnimationCheckTool
 						continue;
 					}
 
-					controller.StartClip(clip, clip.PlaybackFlags);
+					controller.StartClip(
+						clip,
+						clip.Tag is AnimationClipTag tag
+							? tag.PlaybackFlags
+							: DigitalRiseModel.Animation.AnimationFlags.None);
 					EvaluateAt(TimeSpan.FromTicks(clip.Duration.Ticks / 2));
 					EvaluateAt(TimeSpan.Zero);
 

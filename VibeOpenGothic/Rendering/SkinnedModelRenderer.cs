@@ -2,6 +2,7 @@ using DigitalRiseModel;
 using DigitalRiseModel.Animation;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using VibeOpenGothic.Assets.Animation;
 using VibeOpenGothic.Assets.Meshes;
 using VibeOpenGothic.Assets.Models;
 using VibeOpenGothic.Assets.Skins;
@@ -245,10 +246,15 @@ public sealed class SkinnedModelRenderer : IDisposable
 
 		var instance = new DrModelInstance(model);
 		AnimationController? controller = null;
-		if (info.Asset.IdleClip is not null)
+		var idle = info.Asset.IdleClip;
+		if (idle is not null)
 		{
 			controller = new AnimationController(instance);
-			controller.StartClip(info.Asset.IdleClip, info.Asset.IdleClip.PlaybackFlags);
+			controller.StartClip(
+				idle,
+				idle.Tag is AnimationClipTag tag
+					? tag.PlaybackFlags
+					: DigitalRiseModel.Animation.AnimationFlags.None);
 			controller.Update(TimeSpan.Zero);
 		}
 
