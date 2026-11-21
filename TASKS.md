@@ -30,10 +30,11 @@ A task is done only when:
 
 ## Current focus
 
-**T2.1 - Static collision world.** T1.10 is complete.
+**T2.2 - Player controller and camera.** T2.1 is complete.
 
-> T1.10 adds the static spatial-bucket layout and the potential instanced-draw
-> counter. T2.1 starts the Bepu static collision world.
+> T2.1 adds the Bepu static collision world, layer-aware raycasts and fixed-step
+> stepping. T2.2 adds the capsule character controller, input and cameras on top
+> of it.
 
 ## Milestone overview
 
@@ -266,18 +267,27 @@ A task is done only when:
 
 ## M2 - Movement and world interaction
 
-- [ ] **T2.1 Static collision world**
+- [x] **T2.1 Static collision world** (2026-11-21)
   Build the Bepu simulation, convert the world mesh and collidable VOBs into
   static colliders, define collision layers/masks, and expose raycast/overlap
   queries. Sanitize degenerate triangles. Fixed 60 Hz step with substep cap.
   **Done when:** headless tests cover drop/rest, ray masks and a walkable world
   mesh; loading a real world builds collision without errors and reports timings.
+  Result: 259 mesh shapes, 535,475 triangles and 5,887 static colliders on
+  `newworld.zen`, built in about 2.9 s; 86 degenerate triangles removed, 2
+  non-unit-scale instances skipped. Layer-aware raycasts, conservative
+  broad-phase overlap, fixed 60 Hz/5-substep stepping and a `--check-world`
+  start-point probe are implemented. 261 tests. See Design/04 and Design/09.
+
+  Follow-ups: dedicated VOB collision meshes, non-unit-scale instances and
+  per-triangle water/ladder/non-collidable flags are tracked in the backlog.
 
 - [ ] **T2.2 Player controller and camera**
   Capsule character controller (slope limit, step height, ground snap, wall
   slide), input mapping (walk/run/sneak, look, jump is not a Gothic action),
   first/third-person cameras with collision, and debug free camera. Spawn at the
-  world start point.
+  world start point. Add the exact capsule/shape casts and query refinements the
+  controller needs on top of T2.1.
   **Done when:** the player can walk through Khorinis for several minutes without
   falling through geometry or sticking on stairs (manual checklist + screenshots);
   headless controller tests pass.
@@ -521,6 +531,9 @@ A task is done only when:
 - Original Gothic UI replication: script-created menus, `.FNT` fonts, authentic
   inventory/journal/menu layouts and art.
 - Portal-based visibility from the BSP tree.
+- Dedicated static VOB collision meshes, non-unit-scale collision instances, and
+  per-triangle water/ladder/non-collidable material flags for the Bepu world.
+- Exact shape overlap and sphere casts for character and camera queries (T2.2).
 - Hardware skinning alternatives for >72 bones.
 - Optional four-position skinning shader for vanilla armor/variant meshes whose
   bind data is inconsistent under standard LBS (see Design/03).

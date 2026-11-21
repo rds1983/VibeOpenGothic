@@ -137,6 +137,41 @@ Collision filters (layers): `World`, `StaticProp`, `Npc`, `Player`, `Item`,
 `Projectile`, `Camera`, `Focus`. The camera and focus rays must ignore the player
 and focus-target visuals appropriately.
 
+### T2.1 static collision pass
+
+- `VibeOpenGothic.Physics` owns the Bepu simulation. The public API uses engine
+  centimetres; positions and mesh vertices convert to metres at the Bepu
+  boundary (`0.01`), and gravity is `(0, -9.81, 0)` m/s².
+- `WorldPhysicsBuilder` converts the converted world mesh and every static VOB
+  with `CdStatic` or `CdDynamic` into `PhysicsWorldDescription`. Static meshes
+  are shared as Bepu `Mesh` shapes; each instance adds one static collider with
+  its converted pose. On `newworld.zen` that is 259 mesh shapes, 535,475
+  triangles and 5,887 static colliders; loading takes about 4.2 s on the
+  development machine.
+- Degenerate, non-finite and out-of-range triangles are skipped and counted.
+  `CollisionFilter` uses `CollisionLayer` flags and symmetric masks; the
+  `Camera` and `Focus` masks are query-side layers. Two non-unit-scale static
+  instances are currently skipped and reported.
+- `PhysicsWorld.Step` accumulates elapsed time in a fixed 60 Hz loop with at
+  most five substeps per caller step. `GothicGame` drives it from the existing
+  `FixedStepRunner`; future dynamic bodies and the player capsule use the same
+  simulation.
+- `Raycast` uses Bepu's ray tests and a layer mask through `IRayHitHandler`;
+  positions, distances and normals are returned in engine space. `OverlapBox`
+  is a conservative broad-phase AABB query and does not yet run contact
+  generation. `SphereCast` remains for T2.2.
+- `--check-world` builds the collision world after the visual load, prints the
+  stats and casts a downward probe from the start point.
+- `GothicGame` builds the same collision world during `LoadContent` and steps it
+  from the fixed logic loop. The app has no loading screen yet, so the extra
+  ~4 s collision build currently leaves the window blank until the first frame.
+- Per-triangle material flags (water, ladders, non-collidable surfaces) and
+  non-unit-scale collision instances are deferred; they are counted in the
+  build stats rather than silently ignored.
+- Static VOB collision currently uses the converted visual mesh. Worlds whose
+  collision mesh differs from the rendered mesh need the dedicated collision
+  source in a later pass.
+
 ### Character controller requirements
 
 - Walk speed, run speed, sneak speed come from scripted attributes.
@@ -153,10 +188,13 @@ and focus-target visuals appropriately.
 `IPhysicsWorld` exposes:
 
 ```csharp
-bool Raycast(Vector3 from, Vector3 to, out Hit hit, CollisionMask mask);
-bool SphereCast(...);
-bool OverlapBox(...);
+bool Raycast(Vector3 from, Vector3 to, out PhysicsHit hit, CollisionLayer mask);
+int OverlapBox(Vector3 center, Vector3 halfExtents, CollisionLayer mask,
+    List<PhysicsOverlap>? results = null);
 ```
+
+`OverlapBox` is a conservative broad-phase AABB query in T2.1; exact shape
+overlap and `SphereCast` follow with the player controller in T2.2.
 
 Raycasts are used for focus/interaction, camera collision, line of sight,
 footstep surface and bullet traces. Batch results are cached per frame; do not
@@ -180,7 +218,9 @@ Headless physics tests with a fixed timestep:
 1. A Gothic-space point/transform converted to engine space and back is
    unchanged; a VOB parent/child chain produces the same world transform as the
    reference calculation.
-2. Drop a capsule onto a triangle mesh; it rests at the expected height.
+2. Drop a capsule or sphere onto a triangle mesh; it rests at the expected
+   height. T2.1 covers the sphere/mesh case; the capsule controller follows in
+   T2.2.
 3. Walk up a 30-degree slope: moves; 60-degree slope: blocked.
 4. Step over a 25 cm step: passes; 50 cm: blocked.
 5. Wall slide at 45 degrees: tangential motion is preserved.
@@ -191,6 +231,9 @@ World tests (require game data, skipped otherwise):
 
 - Load `newworld.zen`; assert root object count, waypoint count, mesh triangle
   count within a tolerance, and that every VOB maps to a known engine type.
+- Build the static collision world for `newworld.zen`; assert the mesh/instance
+  counts and that a downward ray from the start point hits the world. T2.1
+  currently reports 259 shapes, 535,475 triangles and 5,887 statics.
 - Load each world reachable from the script and report failures; this is the
   acceptance evidence for T1.6.
 

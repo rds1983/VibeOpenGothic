@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using VibeOpenGothic.Core.Logging;
 using VibeOpenGothic.Core.Timing;
+using VibeOpenGothic.Physics;
 using VibeOpenGothic.Rendering;
 using VibeOpenGothic.Ui;
 using VibeOpenGothic.World;
@@ -29,6 +30,7 @@ public sealed class GothicGame : Game
 	private readonly FrameStats _frames = new();
 
 	private GothicRenderer? _renderer;
+	private PhysicsWorld? _physics;
 	private UiRoot? _ui;
 	private double _lastUpdateMs;
 	private double _titleRefreshSeconds;
@@ -123,6 +125,9 @@ public sealed class GothicGame : Game
 			gameVersion,
 			message => Log.Info("World", message),
 			spawnModel);
+		_physics = WorldPhysicsBuilder.Build(
+			world,
+			message => Log.Info("Physics", message));
 		_renderer = new GothicRenderer(GraphicsDevice, world);
 		_ui = new UiRoot(this);
 	}
@@ -133,6 +138,8 @@ public sealed class GothicGame : Game
 		_ui = null;
 		_renderer?.Dispose();
 		_renderer = null;
+		_physics?.Dispose();
+		_physics = null;
 		base.UnloadContent();
 	}
 
@@ -156,7 +163,11 @@ public sealed class GothicGame : Game
 		_debugToggleWasDown = debugToggle;
 
 		var elapsed = gameTime.ElapsedGameTime.TotalSeconds;
-		_fixedStep.Advance(elapsed, _ => _frames.AddLogicStep());
+		_fixedStep.Advance(elapsed, _ =>
+		{
+			_frames.AddLogicStep();
+			_physics?.Step((float)LogicStep.TotalSeconds);
+		});
 
 		_lastUpdateMs = Stopwatch.GetElapsedTime(updateStart).TotalMilliseconds;
 

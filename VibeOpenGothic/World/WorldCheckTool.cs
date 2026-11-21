@@ -1,6 +1,8 @@
+using System.Diagnostics;
 using Microsoft.Xna.Framework;
 using VibeOpenGothic.Data.Installs;
 using VibeOpenGothic.Data.Vfs;
+using VibeOpenGothic.Physics;
 using ZenKit;
 
 namespace VibeOpenGothic.World;
@@ -61,10 +63,42 @@ public static class WorldCheckTool
 			output(
 				$"Skipped visuals: {world.Stats.SkippedVisualCount}; failed: {world.Stats.FailedVisualCount}; " +
 				$"missing textures: {world.Stats.MissingTextureCount}");
+
+			var collisionStart = Stopwatch.StartNew();
+			using (var physics = WorldPhysicsBuilder.Build(world, output))
+			{
+				var collisionStats = physics.Stats;
+				output(
+					$"Collision: {collisionStats.MeshCount} meshes, " +
+					$"{collisionStats.TriangleCount} triangles, " +
+					$"{collisionStats.InstanceCount} instances, " +
+					$"{collisionStats.DegenerateTriangles} degenerate, " +
+					$"{collisionStats.SkippedInstances} skipped, " +
+					$"{collisionStats.NonUnitScaleInstances} non-unit-scale, " +
+					$"{collisionStats.BuildMilliseconds:0} ms");
+				var probeEnd = start - new Vector3(0f, 1000f, 0f);
+				if (physics.Raycast(
+					start,
+					probeEnd,
+					out var hit,
+					CollisionLayer.World | CollisionLayer.StaticProp))
+				{
+					output(
+						$"Collision probe: hit {hit.Layer} at {hit.Position}, " +
+						$"{hit.Distance:0} cm");
+				}
+				else
+				{
+					output("Collision probe: no hit");
+				}
+			}
+
 			output(
 				$"Timings: parse {world.Stats.ParseMilliseconds:0} ms, mesh {world.Stats.MeshMilliseconds:0} ms, " +
 				$"materials {world.Stats.MaterialMilliseconds:0} ms, VOBs {world.Stats.VobMilliseconds:0} ms, " +
-				$"waypoints {world.Stats.WaypointMilliseconds:0} ms, total {world.Stats.TotalMilliseconds:0} ms");
+				$"waypoints {world.Stats.WaypointMilliseconds:0} ms, " +
+				$"total {world.Stats.TotalMilliseconds:0} ms, " +
+				$"collision round-trip {collisionStart.Elapsed.TotalMilliseconds:0} ms");
 
 			return 0;
 		}

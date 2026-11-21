@@ -91,7 +91,7 @@ Rules:
 | Model skinning/rendering | Per-mesh joint compaction, >72-bone remap/warning, source-to-DrModel index remap, attachment binding, `--check-world` model counts, `--spawn-model` screenshot at two timestamps |
 | World loading | VOB transform composition, startpoint/waypoint conversion, mesh/material counts and bounds, `--check-world` real-data run, `newworld.zen` render smoke test |
 | Data diagnostics | `--check-assets` cross-reference counts and missing assets, optional JSON output, `--dump-data` OBJ/MTL/BMP manifest smoke test, outside-install guard |
-| Physics | Drop/rest, slopes, steps, wall slide, moving platforms, ray masks |
+| Physics | Drop/rest on a triangle mesh, ray layer masks, conservative overlap queries, fixed-step substep cap, build statistics and `--check-world` real-world collision probe |
 | Scripts | External arity, marshaling, dialog flow, quest state, save/load of symbols |
 | Gameplay | Inventory transfer, trade price, combat with fixed seeds, clock advance |
 | Save/load | Round-trip each entity, version migration, atomic write, corrupt archive |

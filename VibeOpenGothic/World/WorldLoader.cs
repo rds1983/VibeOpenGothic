@@ -153,7 +153,11 @@ public static class WorldLoader
 
 					if (staticMeshes.TryGetValue(key, out var staticMesh))
 					{
-						staticVobs.Add(new StaticVobInstance(staticMesh.Key, transform));
+						staticVobs.Add(new StaticVobInstance(
+							staticMesh.Key,
+							transform,
+							vob.CdStatic,
+							vob.CdDynamic));
 					}
 				}
 				else

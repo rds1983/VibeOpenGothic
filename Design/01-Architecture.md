@@ -45,7 +45,7 @@ Folders mirror namespaces. Names below are relative to `VibeOpenGothic/`.
 | `VibeOpenGothic.Data` | Install discovery, VFS access, version detection, INI reading | Core, ZenKit |
 | `VibeOpenGothic.Assets` | ZenKit data to CPU-side engine data: meshes, textures, models, animation | Core, Data, ZenKit, DigitalRiseModel (CPU types only), MonoGame math and graphics types (no device) |
 | `VibeOpenGothic.World` | World model: ZEN objects, VOB tree, waynet, triggers, spawning | Core, Data, Assets, Physics |
-| `VibeOpenGothic.Physics` | Bepu world, collision geometry, character controller, queries | Core, Bepu |
+| `VibeOpenGothic.Physics` | Bepu world, collision geometry, character controller, queries | Core, Bepu, MonoGame math |
 | `VibeOpenGothic.Game` | Session, NPCs, combat, inventory, dialogs, quests, save/load, script externals | Core, Data, Assets, World, Physics |
 | `VibeOpenGothic.Rendering` | Graphics device, camera, effects, draw submission, GPU caches | Core, Assets, World (read-only) |
 | `VibeOpenGothic.Ui` | Myra screens, HUD, dialogs, menus; default fonts, optional Gothic FNT later | Core, Assets, Game (read-only view models) |
