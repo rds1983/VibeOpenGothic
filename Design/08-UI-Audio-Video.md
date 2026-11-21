@@ -50,16 +50,20 @@ Screens:
 | Loading/progress | App | Backlog (logs only in T1.6) |
 | Debug overlay (FPS, draw calls, triangles) | App | T1.6 |
 | Controls HUD | App | T1.6 |
-| Debug console | App, Game | T2.2, T3.10 |
-| HUD: health, mana, stamina, focus prompt, subtitles | Game session | T2.7 |
-| Main menu, settings, save/load list, pause | App (plain Myra) | T4.2 |
-| Inventory, equipment | Game inventory | T3.5/T4.3 |
-| Dialog and trade | Game.Dialogs | T3.6/T4.3 |
-| Journal, quest log | Game.Quests | T4.3 |
-| Document/book reader | Item text pages | T4.3 |
-| Chapter screen | Scripts + image/video | T4.5 |
-| Video player | Bink files | T4.5 (stretch) |
-| Original Gothic UI replication | Optional parity work | T4.7/backlog |
+| Debug console | App, Game | M3 (T2.2 input, T3.10 console) |
+| HUD: health, mana, stamina, focus prompt, subtitles | Game session | M3 (T2.7) |
+| Main menu, settings, save/load list, pause | App (plain Myra) | M5 (T4.2) |
+| Inventory, equipment | Game inventory | M4 (T3.5), polish in M5 (T4.3) |
+| Dialog and trade | Game.Dialogs | M4 (T3.6), polish in M5 (T4.3) |
+| Journal, quest log | Game.Quests | M5 (T4.3) |
+| Document/book reader | Item text pages | M5 (T4.3) |
+| Chapter screen | Scripts + image/video | M5 (T4.5) |
+| Video player | Bink files | M5 (T4.5, stretch) |
+| Original Gothic UI replication | Optional parity work | M5/backlog (T4.7) |
+
+This table deliberately keeps the minimal functional screens (HUD, inventory,
+dialog, console) in M3/M4, ahead of the presentation milestone. Plain Myra is the
+target there; the original's look, fonts and art are M5 at the earliest.
 
 Rules:
 

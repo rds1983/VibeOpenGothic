@@ -64,15 +64,21 @@ Externals are grouped by system and implemented in batches:
 
 | Group | Examples | Milestone |
 | --- | --- | --- |
-| Core/math/string | `PRINT`, `CONCAT`, `INT_TO_STRING`, `RANDOM` | T3.1 |
-| AI output | `AI_OUTPUT`, `AI_OUTPUTS`, `AI_OUTPUTSVM`, `MOVE_NPC` | T3.2 |
-| World | `WLD_*`, `TRIGGER`, `PLAY_ANIMATION`, `SND_*` | T3.2 |
-| NPC | `NPC_*`, `CREATE_NPC`, `NPC_GETATTR`, equipment, inventory | T3.4-T3.6 |
-| Items | `CREATE_ITEM`, `ITEM_*`, `ITM_*` | T3.5 |
-| Combat | `AI_*FIGHT*`, damage, `DEF_HIT*` windows | T3.7 |
-| Magic | `SPELL_*`, runes, mana | T3.8 |
-| UI | `CREATE_MENU`, `CREATE_MENU_ITEM`, `PRINT_*` | T4.2 |
-| Music | `MUSIC_*` | T4.6 |
+| Core/math/string | `PRINT`, `CONCAT`, `INT_TO_STRING`, `RANDOM` | M2 (T3.1) |
+| Startup/spawn | `WLD_INSERTNPC`, `WLD_INSERTITEM` | M2 (T3.2) |
+| Appearance | `MDL_SETVISUALBODY`, `MDL_SETMODELFATNESS`, `MDL_SETMODELSCALE` | M2 (T2.9) |
+| AI output | `AI_OUTPUT`, `AI_OUTPUTS`, `AI_OUTPUTSVM`, `MOVE_NPC` | M3 (T3.3) |
+| World | `WLD_*`, `TRIGGER`, `PLAY_ANIMATION`, `SND_*` | M3 (T3.3) |
+| NPC | `NPC_*`, `CREATE_NPC`, `NPC_GETATTR`, inventory | M3/M4 (T3.4, T3.5) |
+| Items | `CREATE_ITEM`, `ITEM_*`, `ITM_*` | M4 (T3.5) |
+| Combat | `AI_*FIGHT*`, damage, `DEF_HIT*` windows | M4 (T3.7) |
+| Magic | `SPELL_*`, runes, mana | M4 (T3.8) |
+| UI | `CREATE_MENU`, `CREATE_MENU_ITEM`, `PRINT_*` | M5 (T4.2) |
+| Music | `MUSIC_*` | M5 (T4.6) |
+
+The VM host and the startup chain are needed before anything script-owned can be
+seen, so `T3.1`/`T3.2` land in M2 with the visibility tasks rather than with the
+rest of the script work. Everything else can follow behaviour-first.
 
 Every external implementation:
 
@@ -122,8 +128,14 @@ implements:
 - Dialog lock: while in a dialog, other AI commands are queued or ignored as in
   the original.
 
-Pathfinding uses the waynet (see [04-World-And-Physics.md](04-World-And-Physics.md));
-off-graph movement falls back to direct steering with obstacle checks.
+Pathfinding is the authored waynet plus a Dijkstra over its edges, matching the
+original; there is no navmesh, Recast or A* (see
+[04-World-And-Physics.md](04-World-And-Physics.md)). `AI_GotoWaypoint` resolves
+a name to a node and then behaves like `AI_GoToPoint`. Off-graph movement is
+direct steering; blocked steps retry by turning the velocity in 5 degree
+increments up to about 35 degrees each way, which is how the original avoids
+obstacles. Free points (beds, anvils, teaching slots) are a separate exclusive
+list.
 
 ## Menus and UI scripts
 

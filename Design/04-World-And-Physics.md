@@ -19,9 +19,19 @@ Loading is staged so progress can be reported and tests can load parts:
 2. Convert the world mesh and materials; build static collision.
 3. Build the BSP lookup structures (sector and leaf queries).
 4. Convert the VOB tree into engine objects, preserving parent/child transforms.
-5. Build the waynet graph.
-6. Initialize sky and lighting state.
-7. Spawn the player at the requested waypoint or the world's start point.
+5. Run the world's script initialization and spawn script-owned entities (hero,
+   NPCs, inserted items). NPC and item appearance exists only in script data, so
+   this stage is what makes gameplay entities visible.
+6. Apply each script-spawned entity's instance data (visual body, head, armor,
+   item visual) to its renderable.
+7. Build the waynet graph.
+8. Initialize sky and lighting state.
+9. Place the player at the requested waypoint or the world's start point.
+
+Stages 5-6 are implemented in M2, the rest of script behaviour in M3/M4. A world
+can still be loaded for conversion diagnostics with scripts skipped; then the
+hero and NPCs are absent and the diagnostic reports them as such rather than
+silently rendering nothing.
 
 World changes unload the previous world's GPU and collision data first. The
 session object survives; the player and script state are re-inserted into the new
@@ -29,7 +39,7 @@ world (see [06-Gameplay.md](06-Gameplay.md)).
 
 ### T1.6 static pass
 
-The first pass implements stages 1, 2 (visual only) and 5:
+The first pass implements stages 1-4 (visual only):
 
 - World mesh, static `.MRM`/`.MSH` VOB visuals and waypoints are converted to
   engine space; portal/ghost-occluder polygons are skipped for the visual pass.
@@ -37,8 +47,9 @@ The first pass implements stages 1, 2 (visual only) and 5:
   children. The loader converts it once and applies it directly to shared static
   meshes; parent composition is only used for runtime local transforms.
 - The `zCVobStartpoint` gives the first free-camera position and direction.
-- BSP queries, sky, collision, spawn logic, NPCs and moving objects remain for
-  T1.9/T2.x/T3.x.
+- BSP queries, sky, collision, script spawning and moving objects remain for
+  later milestones: collision in M2 (T2.1/T2.12), script-owned entities in M2
+  (T3.1/T3.2/T2.9), behaviour in M3.
 - `--check-world` reports 23 roots / 23,288 VOBs, 11,546 static instances from
   312 unique meshes, 2,959 waypoints, 473k world triangles and a start point on
   G2 NotR. Without culling the frame submits about 2.73M triangles and 23k draw
@@ -60,6 +71,43 @@ this produces 883 model instances from 61 unique models after the preview option
 is off; most are MOBSI props with `S_S0` and static `.MDL` furniture. NPC VOBs
 are not placed in the ZEN; scripts spawn them later, so `--spawn-model <mds>` is
 the developer preview for an NPC/creature against the real world.
+
+### Script-owned appearance (M2)
+
+The world file does not carry the appearance of gameplay entities. Two facts,
+measured on `newworld.zen`, drive the visibility milestone:
+
+- `C_NPC` has no visual members at all. Body, head, teeth, skin color and armor
+  are assigned by `Mdl_SetVisualBody(...)` calls inside the instance function.
+- All 2,331 world `oCItem` VOBs have `ShowVisual=false` and expose only
+  `Instance` and `Amount`. An item's mesh comes from the `C_ITEM.VISUAL` /
+  `VISUAL_CHANGE` / `VISUAL_SKIN` fields of its script instance.
+
+Consequently a visible hero or NPC requires a working Daedalus host (`T3.1`),
+instance initialization and spawning (`T3.2`) and an appearance assembler
+(`T2.9`) before any activity layer. The VM lives in M2 for this reason: without
+it there is nothing to render. The assembled appearance also fixes collision
+height and the attachment graph, so it precedes `T2.12`/`T2.13`.
+
+### Collision gaps before activity (M2)
+
+Collision today covers the world mesh and `CdStatic`/`CdDynamic` VOBs with a
+converted visual mesh. Measured gaps that `T2.12` must close:
+
+- 838 collidable VOBs use `VisualType.Model`, but only world and static meshes
+  are converted, so those colliders are missing.
+- Every collider is created as static, so script-moved doors, movers and chests
+  block the player as immovable walls.
+- `Material.DisableCollision` submeshes are not skipped, although the original
+  drops their triangles (`physicvbo.cpp`, `physicmeshshape.cpp`,
+  `dynamicworld.cpp:577`).
+- The original creates one collider per model attachment (`physicmesh.cpp`) and
+  chooses `addStaticObj` or `addMovableObj` per VOB, so props attached to movers
+  move instead of being baked into the world.
+
+`T2.13` then hardens the capsule controller against the real world and replaces
+the manual walk with an automated traversal probe.
+
 
 ## Coordinate spaces
 
@@ -161,18 +209,18 @@ and focus-target visuals appropriately.
 - `Raycast` uses Bepu's ray tests and a layer mask through `IRayHitHandler`;
   positions, distances and normals are returned in engine space. `OverlapBox`
   is a conservative broad-phase AABB query and does not yet run contact
-  generation. `SphereCast` remains for T2.2.
+  generation. `CapsuleCast` covers the controller's needs; see T2.2 below.
 - `--check-world` builds the collision world after the visual load, prints the
   stats and casts a downward probe from the start point.
 - `GothicGame` builds the same collision world during `LoadContent` and steps it
   from the fixed logic loop. The app has no loading screen yet, so the extra
   ~4 s collision build currently leaves the window blank until the first frame.
 - Per-triangle material flags (water, ladders, non-collidable surfaces) and
-  non-unit-scale collision instances are deferred; they are counted in the
-  build stats rather than silently ignored.
+  non-unit-scale collision instances are deferred to T2.12; they are counted in
+  the build stats rather than silently ignored.
 - Static VOB collision currently uses the converted visual mesh. Worlds whose
   collision mesh differs from the rendered mesh need the dedicated collision
-  source in a later pass.
+  source in T2.12.
 
 ### Character controller requirements
 
@@ -222,11 +270,53 @@ int OverlapBox(Vector3 center, Vector3 halfExtents, CollisionLayer mask,
 ```
 
 `OverlapBox` is a conservative broad-phase AABB query; exact shape overlap and
-the remaining character queries follow with T2.2/T2.3.
+the remaining character queries follow with T2.13.
 
 Raycasts are used for focus/interaction, camera collision, line of sight,
 footstep surface and bullet traces. Batch results are cached per frame; do not
 cast the same ray multiple times in one frame.
+
+## Navigation
+
+Navigation follows the original instead of a general pathfinder. There is no
+navmesh, no Recast/Detour and no A* over terrain in Gothic; the world ships an
+authored waynet that artists and scripts already refer to by name, and the AI
+moves between those points.
+
+- **Graph.** Nodes are waynet waypoints with converted position and direction.
+  Edges are the ZEN waynet edges. Edge cost is the centimetre length rounded and
+  square-rooted the way the original stores it (`int(sqrt(dist))`), kept as
+  `int32`; edges are traversable in both directions.
+- **Ground snapping.** Each waypoint is ray-cast down to the ground at load and
+  indexed at its surface height, so an NPC does not aim at a floating point.
+- **Ladders.** An edge is tagged as a ladder edge when the segment between two
+  waypoints crosses a ladder MOBSI bounding box within about 100 cm. Ladder
+  traversal is then a climb state, not a straight-line slide.
+- **Free points.** Beds, anvils, teaching slots and similar spots are a separate
+  name-indexed, X-sorted list, not graph nodes. They are exclusive: one NPC
+  occupies a free point at a time.
+- **Search.** A Dijkstra from all seeds, expanded with a two-bucket wavefront
+  over the integer costs and a generation counter to avoid clearing arrays.
+  Following the original keeps tie-breaking identical, which matters because
+  scripts and walkthroughs depend on which side of a gate the AI chooses.
+- **Seeds.** A move starts from the current waypoint when it is connected and
+  close; otherwise from the nearest waypoint with line of sight; otherwise from
+  the nearest waypoint; that seed plus its line-of-sight neighbours are all
+  seeded, with the start distance breaking ties, so an NPC can begin mid-edge
+  instead of walking backwards to a node.
+- **Arrival and avoidance.** Arrival threshold is 40 cm, halved after a detected
+  bounce. When a step is blocked the mover retries by rotating the velocity in 5
+  degree increments up to about 35 degrees each way. There is no local steering
+  lattice; that turn-and-retry is the obstacle avoidance.
+
+ZenKit exposes waynet edges through the native `ZkWayNet_getEdge`,
+`ZkWayNet_getEdgeCount` and `ZkWayNet_enumerateEdges` exports. The managed
+`WayNet.Edges` property calls a non-existent `ZkWayNet_getEdges` and throws
+`EntryPointNotFoundException`; `WayNet.Points` works (2,959 points on
+`newworld.zen`). Edge access therefore sits behind a small `IWayNetSource`
+interface so the managed binding can be replaced, or the ZEN section parsed
+directly, without touching the graph or the search. No third-party navigation
+dependency is added.
 
 ## Movers and triggers
 

@@ -92,7 +92,9 @@ Rules:
 | World loading | VOB transform composition, startpoint/waypoint conversion, mesh/material counts and bounds, `--check-world` real-data run, `newworld.zen` render smoke test |
 | Data diagnostics | `--check-assets` cross-reference counts and missing assets, optional JSON output, `--dump-data` OBJ/MTL/BMP manifest smoke test, outside-install guard |
 | Physics | Drop/rest on a triangle mesh, ray layer masks, conservative overlap queries, fixed-step substep cap, build statistics and `--check-world` real-world collision probe |
-| Player movement | Capsule sweep controller: spawn/snap, walking, wall slide, 25 cm step-up, 50 cm step block, camera look modes |
+| Player movement | Capsule sweep controller: spawn/snap, walking, wall slide, 25 cm step-up, 50 cm step block, camera look modes; automated traversal probe over a fixed set of spawn points and walk directions |
+| Entity visibility | `--check-entities` per-category counts and skip reasons; appearance resolution from instance fields (`Mdl_SetVisualBody` arguments, `C_ITEM.VISUAL`); morph-head fallback; world item and MOBSI state-pose selection |
+| Navigation | Waynet graph construction from a real ZEN, edge costs, ladder tagging, free-point exclusivity, mid-edge seeds, unreachable targets, 40 cm arrival threshold |
 | Scripts | External arity, marshaling, dialog flow, quest state, save/load of symbols |
 | Gameplay | Inventory transfer, trade price, combat with fixed seeds, clock advance |
 | Save/load | Round-trip each entity, version migration, atomic write, corrupt archive |
@@ -110,6 +112,12 @@ Rules:
 - `--dump-data <dir>` writes `manifest.json`, OBJ/MTL meshes and top-mip BMP
   textures. Exit `0` on success; exit `1` on a load/write failure or when the
   directory is inside the installation.
+- `--check-entities` categorises every VOB of a world (static mesh, model, item,
+  interactive object, NPC spawn, trigger, zone, sound, light, particle, decal,
+  mover) and prints, per category, how many instances exist, how many are
+  rendered and why the rest are not. It also summarises models, attachments and
+  morph meshes. It is diagnostics only: it must not change what is rendered.
+  Exit `0` when the scan completes, `1` on parse failures.
 
 ## Golden data
 

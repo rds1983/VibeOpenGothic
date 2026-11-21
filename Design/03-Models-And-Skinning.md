@@ -369,8 +369,9 @@ Implement in `Assets.Animation` + `Game.Animation`:
 - Attachments are separate static meshes parented to a named node. Compose the
   node's global transform with the attachment's local transform.
 - Morph meshes (`.MMB`) use per-vertex deltas and animation weights, not bones.
-  For the first pass, render the base mesh with `BasicEffect` and implement
-  morphing late (T4.7). Never mix morph and skinning in one vertex buffer.
+  For the first pass, render the base mesh with `BasicEffect`; real morphing is
+  required by T2.9 because NPC heads are morph meshes, not skinned meshes. Never
+  mix morph and skinning in one vertex buffer.
 - Multi-resolution meshes contain LODs. Load the highest LOD first; LOD
   selection is a performance task (T5.1).
 
@@ -450,4 +451,6 @@ Visual:
 - 2026-11-21: `--spawn-model Orc.mds` and `HumanS.mds` render complete default
   bodies against `newworld.zen`; the Orc screenshot pair at two timestamps shows
   the idle animation advancing. Placed NPC VOBs do not exist in the ZEN, so the
-  preview option is the visual acceptance path until script spawning (T3.2).
+  preview option remains the acceptance path until script spawning (T3.2) and
+  appearance assembly (T2.9) replace it; from then on the hero and NPCs are
+  rendered from their real instance data.

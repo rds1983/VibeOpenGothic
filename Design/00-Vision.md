@@ -25,9 +25,16 @@ data plus optional mod files:
 6. The frame rate is stable on modest hardware (target: 60 FPS at 1080p in
    Khorinis), with loading times comparable to OpenGothic.
 
-Intermediate milestones are in [../TASKS.md](../TASKS.md). The first playable
-vertical slice is: load a ZEN world, walk around with collision, see NPCs and
-animate them, and interact with a door.
+Intermediate milestones are in [../TASKS.md](../TASKS.md). Work proceeds in a
+deliberate order of value: first every gameplay entity is visible (hero, NPCs,
+world items, interactive objects), then collision is correct so the player never
+gets stuck, then entities get behaviour (movement, routines, interaction,
+scripts). Presentation - sky, weather, fog, lighting fidelity, original UI - is
+deliberately last, because the game does not need a sky to be played.
+
+The first playable vertical slice is therefore: load a ZEN world, see the
+script-spawned hero and NPCs with their real bodies and heads, walk around with
+collision that does not stick, and interact with a door.
 
 ## Non-goals for the first release
 
@@ -86,7 +93,7 @@ animate them, and interact with a door.
 | Mod data violates assumptions (weights not summing to 1, inconsistent bind poses) | Validate and normalize on load, log per-asset diagnostics, never fail the whole world |
 | LHS-to-RHS conversion mistakes (winding, normals, bone transforms) can make models inside-out or mirrored | One `CoordinateSystem` helper, conversion tests, and an asymmetric textured test model checked in T1.0/T1.5 |
 | Scripts and UI assets were authored for LHS; absolute coordinates, angles or map orientation may disagree with engine space | Convert at the script/UI boundary, audit hard-coded coordinates (T3.2), verify the map marker (T4.3) |
-| Large world + GC pauses | Pool transient objects, avoid per-frame allocations in hot paths, profile in M5 |
+| Large world + GC pauses | Pool transient objects, avoid per-frame allocations in hot paths, profile in M6 |
 
 ## Assumption log
 

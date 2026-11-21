@@ -146,8 +146,16 @@ Only after explicit confirmation:
 
 - Respect dependencies: do not start T1.1 before T1.0 (the coordinate conversion
   layer); do not start T1.6 before T1.1/T1.2; do not start T1.7 before
-  T1.3/T1.4; do not start UI before gameplay data exists; do not start visual
-  polish before M3.
+  T1.3/T1.4.
+- Respect the delivery order. The port first makes every gameplay entity visible
+  (hero, NPCs, items, interactive objects), then makes collision correct so the
+  player never gets stuck, and only then gives entities behaviour (movement,
+  routines, scripts, interaction, AI). Do not start movement or AI before the
+  entities it moves are on screen.
+- Graphics parity with the original is the lowest priority in the roadmap, the
+  same as UI parity, and comes last (M5). Do not start visual polish, sky,
+  weather, fog, lightmap fidelity or original-UI replication before M5, and
+  never at the expense of a playability task.
 - If a task is too large for one session, split it in `TASKS.md` and do the first
   part; keep the original ID for the first part and add a suffix for the rest.
 - If a task is blocked, mark `[!]` and write the blocker and what would unblock
@@ -192,5 +200,16 @@ parent agent, which owns the workflow.
 
 ## Current state
 
-The repository starts with documentation only. The first implementation task is
-**T0.1** (solution scaffold). Until it lands, do not add code outside a task.
+M0 and M1 are complete, and M2 is underway: `T2.1` (static collision) and `T2.2`
+(player controller and cameras) are confirmed. The next task is `T2.8`, the
+entity visibility audit that starts the "everything gameplay needs is on screen"
+milestone.
+
+Today the engine loads a real ZEN world, converts its meshes, models and
+materials, renders the static world with spatial buckets, and steps a capsule
+player controller over a Bepu static collision world. Script-spawned entities are
+not yet rendered: `C_NPC` has no appearance fields and world item VOBs carry no
+visual, so hero/NPC/item visuals require the Daedalus host (`T3.1`), world
+startup (`T3.2`) and appearance assembly (`T2.9`) that M2 now schedules ahead of
+the activity milestone. Read [TASKS.md](TASKS.md) for the live order; do not add
+code outside a task.

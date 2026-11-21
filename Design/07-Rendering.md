@@ -6,6 +6,14 @@ Rendering is the lowest-priority subsystem. Gameplay, data, scripts and physics
 come first. Until the game is playable, use MonoGame stock effects and do not
 build a custom shader pipeline.
 
+**Playability before fidelity.** The port first needs every gameplay entity on
+screen: hero, NPCs, items, interactive objects. Only then collision, then
+behaviour. Graphics parity with the original - sky presets, accurate fog,
+lightmaps, weather, original UI and fonts - is M5 work and is explicitly not a
+goal of the visibility milestone. A flat sky and stock-effect lighting are
+acceptable while the game is not yet playable: the game does not need a sky to
+be played.
+
 Renderer ladder:
 
 | Stage | Scope | Effects |
@@ -15,6 +23,13 @@ Renderer ladder:
 | R2 | Materials, fog, sky, day/night, water (static) | Stock effects + UV transforms |
 | R3 | Particles, decals, distant detail, shadows (optional) | Custom or stock |
 | R4 | Visual parity pass | Custom shaders only where stock effects cannot express the material |
+
+Stage R1 is split into two delivery steps. **R1a** is what M2 requires: the
+world mesh, script-spawned hero and NPCs with bodies/heads/armor, world items,
+and interactive objects in their authored state pose, all with stock effects and
+static idle poses. **R1b** is the rest of R1 and belongs to M3: poses driven by
+locomotion and animation blending. Sky, fog, weather and lightmap fidelity are
+R2 and later, i.e. M5, even though their data is already parsed at load.
 
 Each stage must be replaceable without touching gameplay code.
 

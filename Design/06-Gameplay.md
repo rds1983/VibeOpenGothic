@@ -32,6 +32,14 @@ Fields that must round-trip through save/load and script access:
 - Inventory and equipped items.
 - Script instance memory for all NPC-owned symbols.
 
+Appearance is **not** stored in `C_NPC`; it is assigned at instance
+initialization by `Mdl_SetVisualBody(bodyMesh, bodyTexture, bodyTextureColor,
+headMesh, headTexture, teethTexture, armor)` plus `Mdl_SetModelFatness` /
+`Mdl_SetModelScale`. The VM host records those arguments during instance init
+and the appearance assembler (T2.9) turns them into renderables. Item
+appearance works the same way through `C_ITEM.VISUAL`, because world `oCItem`
+VOBs carry no visual.
+
 NPC creation: `CREATE_NPC` allocates an instance, the world spawns a runtime
 NPC from it. The same NPC can be inserted at a waypoint, teleported, or moved
 between worlds.

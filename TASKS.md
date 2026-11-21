@@ -17,6 +17,12 @@ Task IDs are stable. Do not renumber tasks; add new ones with a suffix
 (`T1.3a`) or at the end of the milestone. Agents may reorganize the remaining
 (unchecked) tasks freely after a task is confirmed.
 
+**Task IDs are labels, not execution order.** The order of work is the order of
+the bullets in this file: milestones run top to bottom, and a milestone's tasks
+run in the order listed. Two consequences of the reordering below are expected:
+`M3` holds `T2.3`-`T2.7` because those are activity tasks, and `M2` holds
+`T2.8`+ because those were added later.
+
 ## Definition of done
 
 A task is done only when:
@@ -30,21 +36,29 @@ A task is done only when:
 
 ## Current focus
 
-**T2.3 - Waynet and AI movement.** T2.2 is complete.
+**T2.8 - Gameplay entity visibility audit.** T2.1 and T2.2 are complete.
 
-> T2.2 adds the capsule player controller, first/third/free cameras and the
-> world-space VOB transform fix. T2.3 builds the waynet graph and AI movement.
+> The order is: every gameplay entity is visible, then collision is correct and
+> the player never gets stuck, then entities get behaviour (movement, routines,
+> interaction, scripts). Graphics parity with the original - sky, weather, fog,
+> lighting fidelity, original UI - stays last: the game must be playable without
+> a sky.
 
 ## Milestone overview
 
 | Milestone | Outcome |
 | --- | --- |
 | M0 Foundation | Builds, runs, finds Gothic, mounts its data, has CI |
-| M1 Data and static world | Converts meshes/models/textures, renders a real world and NPCs |
-| M2 Movement and world interaction | Walking with collision, waynet AI, doors/triggers, dynamic props, usable HUD |
-| M3 Scripts and gameplay | Daedalus boot, NPCs, dialogs, combat, magic, quests, saves |
-| M4 Presentation | Functional Myra UI, audio, visual FX, video; optional original UI/visual parity last |
-| M5 Hardening | Performance, mods, settings, packaging, full-game parity |
+| M1 Data and static world | Converts meshes/models/textures, renders a real world and representative NPCs |
+| M2 Visible gameplay entities and solid collision | Hero, NPCs, items and interactive objects are rendered from scripts; collision is correct and the player cannot get stuck |
+| M3 Entity activity | Movement, animation-driven locomotion, AI, routines, interaction, triggers, HUD |
+| M4 Scripts and gameplay systems | Full Daedalus coverage, combat, magic, inventory, dialogs, quests, saves |
+| M5 Presentation | Functional Myra UI, audio, visual FX, video; optional original UI/graphics parity last |
+| M6 Hardening | Performance, mods, settings, packaging, full-game parity |
+
+Graphics parity with the original game (sky presets, fog matching, lightmaps,
+weather, original UI, fonts) is **not** a goal of M2 or M3. A flat sky and stock
+effect lighting are acceptable until M5.
 
 ---
 
@@ -217,8 +231,9 @@ A task is done only when:
   static MDM node attachments; >72-bone meshes keep the strongest 72 and warn.
   `newworld.zen` has 61 unique model assets / 883 instances / 15,068 triangles;
   233 tests; `--spawn-model Orc.mds` renders an animated Orc at two timestamps.
-  Morph heads, inventory weapon/armor slots and skinned alpha-test remain
-  backlog. See Design/03 and Design/07.
+  Morph heads, inventory weapon/armor slots and skinned alpha-test were deferred:
+  morph heads and script-driven bodies are now T2.9, skinned alpha-test stays in
+  the backlog. See Design/03 and Design/07.
 
 - [x] **T1.8 Data diagnostics** (2026-11-21)
   `--check-meshes` (T1.1), `--check-textures` (T1.2), `--check-models` (T1.3),
@@ -264,7 +279,30 @@ A task is done only when:
   Coarser 40/80 m cells report 753/545 instanced draws but submit more off-screen
   instances. 253 tests. See Design/07 and Design/09.
 
-## M2 - Movement and world interaction
+## M2 - Visible gameplay entities and solid collision
+
+Goal: every entity that gameplay depends on is on screen and correctly placed -
+the hero, NPCs, world items, interactive objects - and collision is correct
+enough that the player can walk the world without getting stuck. Behaviour
+(movement, routines, interaction, scripts beyond appearance) is M3.
+
+Two verified facts drive this milestone. Gothic does not store NPC or item
+appearance in the world file: `C_NPC` has no visual fields, and world `oCItem`
+VOBs carry no visual at all (2,331 of them in `newworld.zen`, every one with
+`ShowVisual=false`). Appearance exists only as `Mdl_SetVisualBody(...)` /
+`C_ITEM.VISUAL` data inside Daedalus instances, so a visible hero or NPC
+requires a working VM earlier than "scripts last" would suggest.
+
+Task order inside this milestone, and why:
+
+1. `T2.8` measures what is missing - diagnostics only, no rendering change.
+2. `T3.1` gives us a VM; `T3.2` runs world startup so NPCs and items actually
+   exist in the scene graph at their waypoints (default bodies are acceptable).
+3. `T2.9`-`T2.11` replace the placeholders with real appearance: NPC bodies,
+   heads and armor, item visuals, and interactive-object state poses.
+4. `T2.12`-`T2.13` make collision correct and prove the player cannot get stuck.
+   They come after the visuals so the collider set matches what is rendered and
+   so collision height can come from the assembled NPC body.
 
 - [x] **T2.1 Static collision world** (2026-11-21)
   Build the Bepu simulation, convert the world mesh and collidable VOBs into
@@ -279,7 +317,7 @@ A task is done only when:
   start-point probe are implemented. 261 tests. See Design/04 and Design/09.
 
   Follow-ups: dedicated VOB collision meshes, non-unit-scale instances and
-  per-triangle water/ladder/non-collidable flags are tracked in the backlog.
+  per-triangle water/ladder/non-collidable flags are tracked in T2.12.
 
 - [x] **T2.2 Player controller and camera** (2026-11-21)
   Capsule character controller (slope limit, step height, ground snap, wall
@@ -298,14 +336,162 @@ A task is done only when:
   screenshot hash `55EEF872733A16B7D663B0C606DB44E8C9E852F6CBA1C700B92AA2A021292600`.
   See Design/04 and Design/07.
 
+- [ ] **T2.8 Entity visibility audit and `--check-entities`**
+  Measure exactly which gameplay entities are visible today, by category, from a
+  real world, and turn that into a repeatable diagnostic. Categorise every VOB in
+  the tree (static mesh visual, model visual, item VOB, interactive object, NPC
+  spawn, trigger, zone, sound, light, particle, decal, mover), and report per
+  category how many instances exist, how many are rendered, and why the rest are
+  not (no visual, `ShowVisual=false`, unsupported visual type, missing asset,
+  needs instance data). Add the same summary for models, attachments and morph
+  meshes. This task changes diagnostics only - no new rendering.
+  **Done when:** `--check-entities` runs on `newworld.zen` and prints a per-category
+  table with counts and skip reasons; the numbers for static meshes and models
+  match `--check-world`; the report is documented in Design/09 and referenced
+  from Design/04.
+  Note: the current loader reports 10,859 skipped visuals on `newworld.zen`, which
+  is far more than the entity categories that actually need drawing. The audit
+  must separate "correctly skipped" (trigger markers, spot markers, items whose
+  visual lives in script data) from "silently lost" (decals, particles, morph
+  meshes).
+
+- [ ] **T3.1 Daedalus host and core externals** (moved from M4: prerequisite for
+  every visible NPC and item)
+  Wrap `ZenKit.DaedalusVm`, load `GOTHIC.DAT`, own symbol lookup and instance
+  allocation, register core externals (print, string/number conversion, random,
+  time), and implement the default unimplemented-external logger. Add
+  `--check-scripts` coverage report.
+  **Done when:** the VM loads a real script, core calls work, missing externals
+  are reported once, and argument marshaling is unit tested.
+
+- [ ] **T3.2 Game initialization and entity spawning** (moved from M4: this is what
+  puts NPCs and items into the world)
+  Implement the startup chain (`startup_global`, `startup_<world>`,
+  `init_global`, `init_<world>`, `initPerceptions`), allocate and initialize
+  instances, spawn the player from `PC_HERO`, and run the first world's startup
+  scripts. Handle `wld_insertnpc` / `wld_insertitem` so script-placed entities
+  appear at their waypoints. Audit externals that exchange positions/angles for
+  the LHS-to-RHS boundary and log any hard-coded coordinate usage. Log every
+  script call in developer mode.
+  **Done when:** a new game reaches a player standing at the correct start
+  waypoint in a real world with the script-spawned NPCs present in the scene
+  graph at their waypoints, and no fatal script error; repeated world loads do
+  not duplicate globals; no script receives Gothic-space geometry.
+  Behaviour is explicitly out of scope here: NPCs may stand still, and their
+  bodies may still be the default model mesh. `T2.9` replaces that placeholder
+  with real instance-driven bodies, heads and armor; this task only has to put
+  the entities in the world at the right transform.
+
+- [ ] **T2.9 Hero and NPC appearance assembly**
+  Backfill NPC visuals from instance data instead of the default-body placeholder
+  left by T3.2: read the `Mdl_SetVisualBody` arguments recorded during instance
+  init and resolve body mesh, body texture variant and color, head mesh, teeth,
+  and armor visual. Support morph-mesh heads (`.MMB`/`.MMS`, per-vertex morph
+  animation - not bones), `model_fatness`, `model_scale`, and voice/guild-driven
+  variants where data exists. Render the hero and at least a dozen distinct NPC
+  archetypes from `newworld.zen` with correct bodies, heads and armor.
+  **Done when:** a screenshot shows the hero and several script-spawned NPCs with
+  their real heads, body textures and armor; morph heads animate; changing a
+  script instance's visual changes the render without reloading the world;
+  headless tests cover visual resolution from instance fields and the >72-bone
+  and missing-mesh fallbacks.
+  Must not require AI, routines or movement - poses are static idle only.
+
+- [ ] **T2.10 World items and item visuals**
+  Render item VOBs that exist in the world and items held or equipped by NPCs.
+  Resolve `C_ITEM.VISUAL` / `visual_change` to a static mesh or model, apply
+  `inv_zbias`/`inv_rot`/`inv_animate`, and place world items at their VOB
+  transforms. Equipped weapons and armor must follow the owning NPC's attachment
+  node; loose items rest on the ground.
+  **Done when:** `newworld.zen` renders its placed items (weapons, potions, ore,
+  documents) at correct positions and orientations; an NPC visibly holds an
+  equipped weapon; a missing or unknown item visual logs once and does not crash;
+  headless tests cover visual resolution and attachment binding.
+  Inventory UI and take/drop behaviour belong to M3/M4.
+
+- [ ] **T2.11 Interactive object visuals and state poses**
+  Render MOBSI visuals in their correct state instead of always showing the
+  closed/idle pose: read the `oCMobInter`/`oCMobContainer`/`oCMobDoor` state and
+  animation names from the VOB, and draw the matching clip (open/closed, lever
+  up/down, chest lid). Include `zCMover` keyframed transforms evaluated at their
+  current time so doors, elevators and boats sit where the data puts them.
+  **Done when:** doors, chests and levers in `newworld.zen` render in the pose
+  their VOB data specifies; a mover with keyframes is drawn at its authored
+  start position; changing the state field re-poses the object without a reload;
+  headless tests cover state-to-clip selection.
+  Using these objects, focus and script callbacks belong to T2.4 (M3).
+
+- [ ] **T2.12 Collision correctness pass**
+  Fix the known collision gaps so the world is solid and honest:
+  honour `Material.DisableCollision` per submesh (the original skips those
+  triangles entirely); classify colliders as static or movable from the VOB
+  flags instead of treating every visual as static; stop treating script-moved
+  objects (doors, movers, chests) as immovable walls; support non-unit-scale
+  instances instead of skipping them; and use the VOB's collision mesh where it
+  differs from the rendered LOD. Split the world mesh by material group so water,
+  ladders and non-collidable surfaces become queryable instead of merging into
+  one opaque collider.
+  **Done when:** `--check-world` reports no skipped instances and reports the
+  triangles dropped by `DisableCollision`; a door and a mover no longer block as
+  static geometry; water and ladder triangles can be identified by a raycast;
+  headless tests cover each rule.
+  Verified baseline to improve on: 259 meshes, 535,475 triangles, 5,887 statics,
+  86 degenerate triangles removed, 2 non-unit-scale instances skipped.
+
+- [ ] **T2.13 Player traversal hardening: no stuck, no falling through**
+  Make the controller survive the real world rather than the test capsule: stairs
+  and tight doorways, wedge corners, slopes near the limit, thin geometry, static
+  props that are slightly too low to step, and transitions between the world mesh
+  and VOB meshes. Add depenetration for the initial spawn and for cases where two
+  contacts leave no valid slide direction, and fix the edge where ground snap and
+  step-up disagree. Replace the manual Khorinis walk with an automated traversal
+  probe: a deterministic set of spawn points, walk directions and durations that
+  asserts the player never leaves the world bounds, never ends below terrain and
+  never stops advancing against a passable surface.
+  **Done when:** the automated probe passes on `newworld.zen` for at least 100
+  start points covering city, harbour, forest and interiors; the known
+  stairs/doorway cases from the T2.2 manual checklist pass; the manual walk is
+  recorded as evidence; headless controller regression tests cover each fixed
+  case.
+  This is the gate the developer asked for: collision is correct before entities
+  start moving.
+
+## M3 - Entity activity
+
+Entities already exist and are visible; this milestone gives them behaviour.
+The order below follows the dependency chain: locomotion first, then the script
+surface it needs, then interaction, then routines, then the HUD that shows the
+results.
+
 - [ ] **T2.3 Waynet and AI movement**
-  Convert the waynet to a graph, implement A* pathfinding, waypoint following,
-  `AI_GotoWaypoint`-style commands, turn-to-direction, and animation selection
-  for walk/run. Handle free points and underwater flags. Consume the
-  `RootMotionDelta` recorded by T1.4 in the movement controller so animation and
-  movement do not move an NPC twice.
+  Convert `ZenKit.World.WayNet` into the navigation graph and follow the original
+  design: nodes are waypoints, edges come from the ZEN waynet, and the search is
+  a Dijkstra over those edges with a centimetre cost - not a voxelised navmesh and
+  not A* over terrain. Snap waypoints to the ground at load, tag ladder-connected
+  edges from ladder MOBSI bounds, keep free points (beds, anvils, teaching slots)
+  as a separate exclusivity-locked list, and reproduce the seed selection rule:
+  current waypoint when connected and close, else nearest waypoint with line of
+  sight, else nearest, then seed with that waypoint plus every line-of-sight
+  neighbour and let the start distance break ties so an NPC can begin mid-edge.
+  Implement waypoint following with the 40 cm arrival threshold (halved after a
+  detected bounce), turn-to-direction, and walk/run animation selection. Consume
+  the `RootMotionDelta` recorded by T1.4 so animation and movement do not move an
+  NPC twice.
+  ZenKit exposes edges through the native `ZkWayNet_getEdge` /
+  `ZkWayNet_getEdgeCount` / `ZkWayNet_enumerateEdges` exports, while the managed
+  `WayNet.Edges` property calls a non-existent `ZkWayNet_getEdges` and throws. Put
+  edge access behind a small `IWayNetSource` so replacing the interop later (or
+  parsing the ZEN section ourselves) does not touch the graph or the search.
   **Done when:** an NPC walks a multi-waypoint path around a corner in a real
-  world; headless graph tests cover pathfinding and unreachable targets.
+  world; headless graph tests cover pathfinding, mid-edge starts, ladders, free-point
+  exclusivity and unreachable targets; the edge source is covered by a data test
+  on a real ZEN.
+
+- [ ] **T3.3 World and AI externals**
+  Implement world/script APIs needed for basic play: waypoints, teleport, AI
+  output, animations, sounds, focus, time, and chapter changes. Track coverage.
+  **Done when:** a scripted sequence (e.g. a simple NPC routine) runs end to end;
+  coverage report shows the implemented set and the remaining names.
 
 - [ ] **T2.4 Focus and interactive objects**
   Focus ray and highlight, MOBSI state machines (doors, chests, levers, ladders,
@@ -328,6 +514,14 @@ A task is done only when:
   **Done when:** walking through a real trigger fires exactly once and is visible
   in the log/console; headless tests cover overlap and cooldown.
 
+- [ ] **T3.4 NPC state, perception and routines**
+  Attributes and guilds, perception events, daily routines, routine waypoints,
+  alert/flee, and script notifications. NPCs must react to the player and to
+  script commands.
+  **Done when:** NPCs in Khorinis perform their daily routine and react to the
+  player at the correct ranges; headless tests cover perception and routine
+  transitions.
+
 - [ ] **T2.7 Minimal Myra HUD**
   Add a functional Myra overlay: health/mana/stamina bars, focus prompt,
   subtitle area, FPS/debug counters, and a simple pause/exit screen. Use a
@@ -338,40 +532,7 @@ A task is done only when:
   stats; the pause screen can resume and exit; dev mode toggles the debug
   overlay.
 
-## M3 - Scripts and gameplay
-
-- [ ] **T3.1 Daedalus host and core externals**
-  Wrap `ZenKit.DaedalusVm`, load `GOTHIC.DAT`, own symbol lookup and instance
-  allocation, register core externals (print, string/number conversion, random,
-  time), and implement the default unimplemented-external logger. Add
-  `--check-scripts` coverage report.
-  **Done when:** the VM loads a real script, core calls work, missing externals
-  are reported once, and argument marshaling is unit tested.
-
-- [ ] **T3.2 Game initialization**
-  Implement the startup chain (`startup_global`, `startup_<world>`,
-  `init_global`, `init_<world>`, `initPerceptions`), allocate and initialize
-  instances, spawn the player from `PC_HERO`, and run the first world's startup
-  scripts. Audit externals that exchange positions/angles for the LHS-to-RHS
-  boundary and log any hard-coded coordinate usage. Log every script call in
-  developer mode.
-  **Done when:** a new game reaches a controllable player in a real world with no
-  fatal script error; repeated world loads do not duplicate globals; no script
-  receives Gothic-space geometry.
-
-- [ ] **T3.3 World and AI externals**
-  Implement world/script APIs needed for basic play: waypoints, teleport, AI
-  output, animations, sounds, focus, time, and chapter changes. Track coverage.
-  **Done when:** a scripted sequence (e.g. a simple NPC routine) runs end to end;
-  coverage report shows the implemented set and the remaining names.
-
-- [ ] **T3.4 NPC state, perception and routines**
-  Attributes and guilds, perception events, daily routines, routine waypoints,
-  alert/flee, and script notifications. NPCs must react to the player and to
-  script commands.
-  **Done when:** NPCs in Khorinis perform their daily routine and react to the
-  player at the correct ranges; headless tests cover perception and routine
-  transitions.
+## M4 - Scripts and gameplay systems
 
 - [ ] **T3.5 Inventory, equipment and interaction**
   Item instances, containers, take/use/equip/drop, torches, ammo, armor visuals,
@@ -420,7 +581,11 @@ A task is done only when:
   **Done when:** every command is documented in `Design/` and usable in a real
   session; no console command is required for normal play.
 
-## M4 - Presentation
+## M5 - Presentation
+
+This milestone is where faithfulness to the original presentation finally matters.
+Until here, a flat sky, stock-effect lighting and plain Myra screens are correct
+by design: the game must be playable without a sky.
 
 - [ ] **T4.1 Audio: SFX and voice**
   Sound effect loading/caching (WAV first), 3D playback with listener, category
@@ -479,7 +644,7 @@ A task is done only when:
   gameplay-relevant visual blockers; all custom effects have fallbacks for
   unsupported hardware.
 
-## M5 - Hardening
+## M6 - Hardening
 
 - [ ] **T5.1 Performance and memory**
   Instancing, culling, LOD selection, asynchronous/streamed loading, VFS lookup
@@ -520,26 +685,21 @@ A task is done only when:
 ## Backlog / ideas (not scheduled)
 
 - GOG/other launcher install detection and an interactive folder picker.
+- Remove the default Orc idle showcase from normal runs once real script-spawned
+  entities render (T3.2/T2.9).
 - Texture frame animation (`loadFrames`) for animated materials.
 - On-screen world loading/progress screen (T1.6 currently reports progress and
   timings through logs only).
-- Remove the default Orc idle showcase from normal runs once script startup
-  spawns real NPCs (T3.2).
 - Full GPU mip-chain upload and sampler/anisotropic policy (T1.5 uploads the
   top mip only).
-- World lightmap UV projection and `DualTextureEffect` (T1.6 renders solid/alpha
-  world materials without baked lightmaps).
-- Morph-mesh heads (`.MMB`) and script-driven NPC body/armor/weapon attachments
-  (T1.7 renders the default body mesh and MDM node attachments; `setVisualBody`
-  belongs to script startup).
+- World lightmap UV projection and `DualTextureEffect` (scheduled in M5 with the
+  visual pass, T4.7).
 - Alpha-tested skinned materials (T1.7 uses `SkinnedEffect`, which has no alpha
   test; alpha materials are blended instead of cut out).
 - Original Gothic UI replication: script-created menus, `.FNT` fonts, authentic
   inventory/journal/menu layouts and art.
 - Portal-based visibility from the BSP tree.
-- Dedicated static VOB collision meshes, non-unit-scale collision instances, and
-  per-triangle water/ladder/non-collidable material flags for the Bepu world.
-- Exact shape overlap and sphere casts for character and camera queries (follow-up).
+- Exact shape overlap and sphere casts for character and camera queries.
 - Skip the `zCVobStartpoint` / `INVISIBLE_ZCVOBSTARTPOINT` visual; the startpoint
   is data only and currently renders as a large marker at the spawn.
 - Hardware skinning alternatives for >72 bones.

@@ -35,6 +35,16 @@ ZenKit forces a `RuntimeIdentifier` per OS through its build targets. Set
 the package copy the matching native library. Do not add win-arm64; it does not
 ship one. Upgrading MonoGame is a separate, explicitly tested task.
 
+Navigation deliberately adds **no** package: the original game navigates its
+authored waynet with a Dijkstra over ZEN edges, so `World` builds the graph
+itself and a Recast/Detour or A* library would diverge from authored trails. The
+waynet edges are read behind a small `IWayNetSource` in `Data`/`World`, because
+the managed ZenKit binding currently exposes `WayNet.Edges` through a native
+entry point (`ZkWayNet_getEdges`) that the shipped `zenkitcapi.dll` does not
+export; the native library does export the single-edge and enumerate variants.
+Keeping edge access behind one interface lets the binding be fixed, or the ZEN
+waynet section parsed directly, without touching the graph or the search.
+
 ## Layers and namespaces
 
 Folders mirror namespaces. Names below are relative to `VibeOpenGothic/`.
@@ -171,7 +181,9 @@ VFS bytes -> ZenKit parse -> AssetConverter -> CPU asset (immutable) -> cache
   `--check-animations` loads every MDS/MAN, builds runtime skeletons and clips,
   and poses each clip at frame zero and its midpoint. `--check-world` loads a ZEN
   world without GPU upload and reports mesh/VOB/waypoint counts, bounds, start
-  point and timings. `--check-assets` walks models, static meshes, textures,
+  point and timings. `--check-entities` adds the per-category visibility table
+  (instances, rendered, skip reason) for every VOB type, model, attachment and
+  morph mesh. `--check-assets` walks models, static meshes, textures,
   scripts and all world VOB visuals, reports cross-reference misses,
   degenerate/invalid geometry and unsupported features; `--json <path>` writes
   the same report as JSON outside the installation. `--dump-data <dir>` exports
