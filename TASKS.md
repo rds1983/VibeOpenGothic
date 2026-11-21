@@ -30,11 +30,11 @@ A task is done only when:
 
 ## Current focus
 
-**T1.8 - Data diagnostics.** T1.7 is complete.
+**T1.9 - Visibility and batching baseline.** T1.8 is complete.
 
-> T1.7 loads MDS/MDL model VOBs, builds per-mesh skins and animates default idle
-> clips; `--check-world` reports model counts and warnings. T1.8 extends the
-> diagnostics with `--check-assets` / `--dump-data` cross-reference reports.
+> T1.8 adds `--check-assets` / `--json` and `--dump-data`; the real-data scan
+> reports model, texture, animation, VOB, geometry and unsupported-feature
+> diagnostics. T1.9 starts with frustum/distance culling and batching.
 
 ## Milestone overview
 
@@ -219,7 +219,7 @@ A task is done only when:
   Morph heads, inventory weapon/armor slots and skinned alpha-test remain
   backlog. See Design/03 and Design/07.
 
-- [ ] **T1.8 Data diagnostics**
+- [x] **T1.8 Data diagnostics** (2026-11-21)
   `--check-meshes` (T1.1), `--check-textures` (T1.2), `--check-models` (T1.3),
   `--check-animations` (T1.4) and `--check-world` (T1.6) cover world meshes,
   textures, skinned models, clips and world conversion. Extend the suite with
@@ -229,6 +229,12 @@ A task is done only when:
   into the installation.
   **Done when:** the commands run on a real install and their output is used in
   the task evidence; docs describe the commands and their exit codes.
+  Result: `--check-assets` walks models, static meshes, textures, scripts and all
+  world VOB visuals; `--json` writes the full report outside the installation.
+  `--dump-data` writes OBJ/MTL/BMP output plus a manifest. G2 NotR scan: 117 MDS,
+  3,931 animations, 1,852 aliases, 1,321,136 triangles, 3,108 degenerate, 2
+  missing MANs, 16 missing textures, 0 missing VOB assets, 0 failures; 237
+  tests. See Design/01 and Design/09.
 
 - [ ] **T1.9 Visibility and batching baseline**
   Frustum culling for static batches and model instances, material-based

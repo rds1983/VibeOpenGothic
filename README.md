@@ -34,10 +34,10 @@ Game source only: `VibeOpenGothic/` excluding `bin/`, `obj/` and the test projec
 
 | Metric | Value |
 | --- | --- |
-| C# files | 126 |
-| C# lines (physical / non-blank) | 10,120 / 8,623 |
+| C# files | 129 |
+| C# lines (physical / non-blank) | 11,178 / 9,588 |
 | Other source files | 3 (2 `.xmmp`, 1 `.csproj`) |
-| Total source size | 255,859 bytes (249.9 KiB) |
+| Total source size | 283,879 bytes (277.2 KiB) |
 
 Counts include generated Myra files. Update this table when source size changes materially.
 
@@ -56,6 +56,8 @@ dotnet test VibeOpenGothic.slnx
 dotnet run --project VibeOpenGothic -- --help
 dotnet run --project VibeOpenGothic -- --probe -g "C:\Gothic II"
 dotnet run --project VibeOpenGothic -- -g "C:\Gothic II"
+dotnet run --project VibeOpenGothic -- -g "C:\Gothic II" --check-assets --json "%TEMP%\vog-assets.json"
+dotnet run --project VibeOpenGothic -- -g "C:\Gothic II" --dump-data "%TEMP%\vog-dump"
 ```
 
 The current build loads and renders the default Gothic II world from a free

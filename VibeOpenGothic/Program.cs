@@ -1,6 +1,7 @@
 using System.Runtime.InteropServices;
 using VibeOpenGothic.App;
 using VibeOpenGothic.Assets.Animation;
+using VibeOpenGothic.Assets.Diagnostics;
 using VibeOpenGothic.Assets.Meshes;
 using VibeOpenGothic.Assets.Skins;
 using VibeOpenGothic.Assets.Textures;
@@ -177,6 +178,22 @@ internal static class Program
 			if (options.CheckWorld)
 			{
 				return WorldCheckTool.Run(install, vfs, options.StartupWorld);
+			}
+
+			if (options.CheckAssets)
+			{
+				return AssetCheckTool.Run(install, vfs, options.JsonPath);
+			}
+
+			if (!string.IsNullOrWhiteSpace(options.DumpDataPath))
+			{
+				return AssetDumpTool.Run(install, vfs, options.DumpDataPath, options.StartupWorld);
+			}
+
+			if (!string.IsNullOrWhiteSpace(options.JsonPath))
+			{
+				PrintError("--json requires --check-assets.");
+				return ExitFailure;
 			}
 
 			if (!vfs.FileExists(install.DefaultGameDatName))

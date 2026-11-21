@@ -90,12 +90,25 @@ Rules:
 | Animation | Frame-to-time conversion, loop/transition timing, quaternion sign, alias/channel remapping, `--check-animations` real-data pose run, event firing |
 | Model skinning/rendering | Per-mesh joint compaction, >72-bone remap/warning, source-to-DrModel index remap, attachment binding, `--check-world` model counts, `--spawn-model` screenshot at two timestamps |
 | World loading | VOB transform composition, startpoint/waypoint conversion, mesh/material counts and bounds, `--check-world` real-data run, `newworld.zen` render smoke test |
+| Data diagnostics | `--check-assets` cross-reference counts and missing assets, optional JSON output, `--dump-data` OBJ/MTL/BMP manifest smoke test, outside-install guard |
 | Physics | Drop/rest, slopes, steps, wall slide, moving platforms, ray masks |
 | Scripts | External arity, marshaling, dialog flow, quest state, save/load of symbols |
 | Gameplay | Inventory transfer, trade price, combat with fixed seeds, clock advance |
 | Save/load | Round-trip each entity, version migration, atomic write, corrupt archive |
 | UI/fonts | HUD and dialog-presenter bindings, UI scale, default font; FNT glyph metrics only if Gothic fonts are implemented; F3 debug overlay and controls HUD manual smoke test |
 | Rendering | Camera handedness/aspect, deterministic `--screenshot` PNG, non-black frame, real texture orientation/alpha/two-sided smoke check |
+
+### Data diagnostics
+
+- `--check-assets` walks models, static meshes, textures, scripts and all world
+  VOB visuals. Exit `0` when the scan completes; exit `1` on parse failures or an
+  invalid output path. Missing assets are reported as issues and truncated in the
+  console, with the full list in JSON.
+- `--json <path>` is only valid with `--check-assets`; the path must be outside
+  the Gothic installation.
+- `--dump-data <dir>` writes `manifest.json`, OBJ/MTL meshes and top-mip BMP
+  textures. Exit `0` on success; exit `1` on a load/write failure or when the
+  directory is inside the installation.
 
 ## Golden data
 

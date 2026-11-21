@@ -25,6 +25,9 @@ public static class HelpText
           --check-models     Bake every MDS model and report skin diagnostics
           --check-animations Load every MDS animation and pose it
           --check-world      Load and convert a ZEN world without rendering
+          --check-assets     Walk models, textures, scripts and VOB references
+          --json <path>      Write the --check-assets report as JSON
+          --dump-data <dir>  Dump converted world mesh and textures
           --screenshot <path> Render the world to a PNG and exit
           --spawn-model <mds> Place a developer model in front of the start point
           --help             Show this help

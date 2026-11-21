@@ -16,6 +16,10 @@ public sealed record CommandLineOptions
 
 	public string? SpawnModel { get; init; }
 
+	public string? JsonPath { get; init; }
+
+	public string? DumpDataPath { get; init; }
+
 	public bool ShowHelp { get; init; }
 
 	public bool ShowVersion { get; init; }
@@ -31,6 +35,8 @@ public sealed record CommandLineOptions
 	public bool CheckAnimations { get; init; }
 
 	public bool CheckWorld { get; init; }
+
+	public bool CheckAssets { get; init; }
 
 	public bool DevMode { get; init; }
 

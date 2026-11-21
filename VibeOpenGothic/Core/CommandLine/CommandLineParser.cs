@@ -16,6 +16,8 @@ public static class CommandLineParser
 		string? dataDirectory = null;
 		string? screenshotPath = null;
 		string? spawnModel = null;
+		string? jsonPath = null;
+		string? dumpDataPath = null;
 		var showHelp = false;
 		var showVersion = false;
 		var probe = false;
@@ -24,6 +26,7 @@ public static class CommandLineParser
 		var checkModels = false;
 		var checkAnimations = false;
 		var checkWorld = false;
+		var checkAssets = false;
 		var devMode = false;
 		var windowed = false;
 		var positionalOnly = false;
@@ -67,6 +70,9 @@ public static class CommandLineParser
 					break;
 				case "--check-world":
 					checkWorld = true;
+					break;
+				case "--check-assets":
+					checkAssets = true;
 					break;
 				case "--devmode" or "-devmode":
 					devMode = true;
@@ -125,6 +131,20 @@ public static class CommandLineParser
 					}
 
 					break;
+				case "--json":
+					if (TryTakeValue(args, ref index, argument, errors, out var json))
+					{
+						jsonPath = json;
+					}
+
+					break;
+				case "--dump-data":
+					if (TryTakeValue(args, ref index, argument, errors, out var dumpData))
+					{
+						dumpDataPath = dumpData;
+					}
+
+					break;
 				default:
 					if (argument.StartsWith("-game:", StringComparison.OrdinalIgnoreCase))
 					{
@@ -165,6 +185,8 @@ public static class CommandLineParser
 			DataDirectory = dataDirectory,
 			ScreenshotPath = screenshotPath,
 			SpawnModel = spawnModel,
+			JsonPath = jsonPath,
+			DumpDataPath = dumpDataPath,
 			ShowHelp = showHelp,
 			ShowVersion = showVersion,
 			Probe = probe,
@@ -173,6 +195,7 @@ public static class CommandLineParser
 			CheckModels = checkModels,
 			CheckAnimations = checkAnimations,
 			CheckWorld = checkWorld,
+			CheckAssets = checkAssets,
 			DevMode = devMode,
 			Windowed = windowed,
 			VersionOverride = versionOverrides.Count == 1

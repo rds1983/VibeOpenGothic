@@ -18,6 +18,8 @@ public sealed class CommandLineParserTests
 		Assert.Null(result.Options.DataDirectory);
 		Assert.Null(result.Options.ScreenshotPath);
 		Assert.Null(result.Options.SpawnModel);
+		Assert.Null(result.Options.JsonPath);
+		Assert.Null(result.Options.DumpDataPath);
 		Assert.False(result.Options.ShowHelp);
 		Assert.False(result.Options.ShowVersion);
 		Assert.False(result.Options.Probe);
@@ -26,6 +28,7 @@ public sealed class CommandLineParserTests
 		Assert.False(result.Options.CheckModels);
 		Assert.False(result.Options.CheckAnimations);
 		Assert.False(result.Options.CheckWorld);
+		Assert.False(result.Options.CheckAssets);
 		Assert.False(result.Options.DevMode);
 		Assert.False(result.Options.Windowed);
 		Assert.Equal(GameVersionOverride.Auto, result.Options.VersionOverride);
@@ -103,6 +106,22 @@ public sealed class CommandLineParserTests
 		var result = CommandLineParser.Parse(new[] { "--spawn-model", "HumanS.mds" });
 
 		Assert.Equal("HumanS.mds", result.Options.SpawnModel);
+		Assert.False(result.HasErrors);
+	}
+
+	[Fact]
+	public void Parse_CheckAssetsAndOutputs_AreRecognized()
+	{
+		var result = CommandLineParser.Parse(new[]
+		{
+			"--check-assets",
+			"--json", "report.json",
+			"--dump-data", "dump",
+		});
+
+		Assert.True(result.Options.CheckAssets);
+		Assert.Equal("report.json", result.Options.JsonPath);
+		Assert.Equal("dump", result.Options.DumpDataPath);
 		Assert.False(result.HasErrors);
 	}
 
@@ -223,6 +242,8 @@ public sealed class CommandLineParserTests
 	[InlineData("--data-dir")]
 	[InlineData("--screenshot")]
 	[InlineData("--spawn-model")]
+	[InlineData("--json")]
+	[InlineData("--dump-data")]
 	public void Parse_MissingValue_AddsError(string argument)
 	{
 		var result = CommandLineParser.Parse(new[] { argument });
