@@ -1,3 +1,4 @@
+using DigitalRiseModel;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using VibeOpenGothic.Assets.Materials;
@@ -6,9 +7,11 @@ using VibeOpenGothic.Assets.Meshes;
 namespace VibeOpenGothic.Rendering;
 
 /// <summary>
-/// One shared vertex/index buffer for the world mesh. Draw ranges merge adjacent
-/// submeshes that use the same material, so the 13k source groups become one
-/// draw per material without duplicating vertices.
+/// One shared vertex/index buffer for the world mesh. Adjacent submeshes that
+/// use the same material are merged into one <see cref="DrMeshPart"/>, so the
+/// 13k source groups become one draw per material without duplicating vertices.
+/// The part array is the whole drawable world; the class only owns the shared
+/// buffers.
 /// </summary>
 public sealed class WorldMeshGpu : IDisposable
 {
@@ -38,42 +41,10 @@ public sealed class WorldMeshGpu : IDisposable
 			BufferUsage.None);
 		_indices.SetData(indices);
 
-		Ranges = MergeByMaterial(mesh.SubMeshes);
-		Materials = materials;
-		VertexCount = mesh.VertexCount;
-		IndexCount = mesh.IndexCount;
-		Bounds = mesh.Bounds;
+		Parts = CreateParts(mesh, materials, _vertices, _indices);
 	}
 
-	public MaterialSet Materials { get; }
-
-	public IReadOnlyList<DrawRange> Ranges { get; }
-
-	public BoundingBox Bounds { get; }
-
-	public int VertexCount { get; }
-
-	public int IndexCount { get; }
-
-	public int DrawRangeCount => Ranges.Count;
-
-	public VertexBuffer VertexBuffer
-	{
-		get
-		{
-			ObjectDisposedException.ThrowIf(_disposed, this);
-			return _vertices;
-		}
-	}
-
-	public IndexBuffer IndexBuffer
-	{
-		get
-		{
-			ObjectDisposedException.ThrowIf(_disposed, this);
-			return _indices;
-		}
-	}
+	public IReadOnlyList<DrMeshPart> Parts { get; }
 
 	public void Dispose()
 	{
@@ -87,9 +58,38 @@ public sealed class WorldMeshGpu : IDisposable
 		_indices.Dispose();
 	}
 
-	private static DrawRange[] MergeByMaterial(IReadOnlyList<MeshSubMesh> subMeshes)
+	private static DrMeshPart[] CreateParts(
+		MeshData mesh,
+		MaterialSet materials,
+		VertexBuffer vertices,
+		IndexBuffer indices)
 	{
-		var ranges = new List<DrawRange>(subMeshes.Count);
+		var runs = MergeByMaterial(mesh.SubMeshes);
+		var parts = new DrMeshPart[runs.Count];
+		for (var index = 0; index < parts.Length; index++)
+		{
+			var run = runs[index];
+			parts[index] = new DrMeshPart(
+				vertices,
+				indices,
+				run.Bounds,
+				PrimitiveType.TriangleList,
+				mesh.VertexCount,
+				run.PrimitiveCount,
+				0,
+				run.StartIndex)
+			{
+				Tag = new DrMeshPartTag(materials.Get(run.MaterialIndex)),
+			};
+		}
+
+		return parts;
+	}
+
+	private static List<MaterialRun> MergeByMaterial(
+		IReadOnlyList<MeshSubMesh> subMeshes)
+	{
+		var runs = new List<MaterialRun>(subMeshes.Count);
 		foreach (var subMesh in subMeshes)
 		{
 			if (subMesh.IndexCount <= 0)
@@ -98,13 +98,13 @@ public sealed class WorldMeshGpu : IDisposable
 			}
 
 			var primitiveCount = subMesh.IndexCount / 3;
-			if (ranges.Count > 0)
+			if (runs.Count > 0)
 			{
-				var previous = ranges[^1];
+				var previous = runs[^1];
 				if (previous.MaterialIndex == subMesh.MaterialIndex &&
 					previous.StartIndex + previous.PrimitiveCount * 3 == subMesh.IndexOffset)
 				{
-					ranges[^1] = previous with
+					runs[^1] = previous with
 					{
 						PrimitiveCount = previous.PrimitiveCount + primitiveCount,
 						Bounds = BoundingBox.CreateMerged(previous.Bounds, subMesh.Bounds),
@@ -113,17 +113,17 @@ public sealed class WorldMeshGpu : IDisposable
 				}
 			}
 
-			ranges.Add(new DrawRange(
+			runs.Add(new MaterialRun(
 				subMesh.IndexOffset,
 				primitiveCount,
 				subMesh.MaterialIndex,
 				subMesh.Bounds));
 		}
 
-		return ranges.ToArray();
+		return runs;
 	}
 
-	public readonly record struct DrawRange(
+	private readonly record struct MaterialRun(
 		int StartIndex,
 		int PrimitiveCount,
 		int MaterialIndex,

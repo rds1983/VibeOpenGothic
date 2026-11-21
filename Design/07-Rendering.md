@@ -28,15 +28,16 @@ The first world renderer replaces the T1.5 primitive test scene:
   the `zCVobStartpoint` position/direction.
 - World render geometry skips invisible portal and ghost-occluder polygons for
   the visual pass; the BSP/portal data remains available in the ZEN for T1.9.
-- The world mesh uses one shared vertex/index buffer. Adjacent submeshes with
-  the same material are merged into one draw range: 12,729 converted submeshes
-  become about 1,081 draws without duplicating vertices.
+- The world mesh uses one shared vertex/index buffer and a `WorldMeshGpu` part
+  array. Adjacent submeshes with the same material are merged into one
+  `DrMeshPart`: 12,729 converted submeshes become about 1,081 parts without
+  duplicating vertices. Each part stores its GPU-resolved `GothicMaterial` in
+  `Tag` and its merged bounds in `BoundingBox`.
 - Static VOB visuals resolve `.3DS` names to compiled `.MRM`/`.MSH` files. Each
   unique mesh is uploaded into a `DrMesh` with one `DrMeshPart` per submesh
   (312 unique meshes for 11,546 instances); each instance applies its composed
-  engine transform. The world mesh itself remains a `WorldMeshGpu` shared buffer
-  because its 1,081 material ranges need one vertex buffer and merged draw
-  ranges.
+  engine transform. The world mesh remains a single shared buffer because its
+  1,081 material parts need one vertex buffer and merged part ranges.
 - Materials are drawn with `BasicEffect` for solid surfaces and
   `AlphaTestEffect` for alpha surfaces; `GothicMaterial.IsTwoSided` selects
   `CullNone`. Lightmaps exist in the ZEN, but `MeshVertex` has no lightmap UV
@@ -120,8 +121,8 @@ and camera are static, so repeated runs are byte-identical.
 statistics. `WorldRenderer` and `SkinnedModelRenderer` only upload/organize
 assets and call:
 
-- `DrawMeshPart(DrMeshPart, Matrix, optional bone matrices)`
-- `DrawRange(...)` for the merged world mesh ranges
+- `DrawMeshPart(DrMeshPart, Matrix, optional bone matrices)` for world, static
+  and skinned parts
 
 `DrawMeshPart` chooses `SkinnedEffect` when `DrMeshPart.Skin` is set and
 `BasicEffect`/`AlphaTestEffect` otherwise, applies materials and counts draw

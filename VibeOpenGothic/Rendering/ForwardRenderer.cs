@@ -212,34 +212,6 @@ public sealed class ForwardRenderer : IDisposable
 		Polygons += part.PrimitiveCount;
 	}
 
-	public void DrawRange(
-		VertexBuffer vertexBuffer,
-		IndexBuffer indexBuffer,
-		int startIndex,
-		int primitiveCount,
-		GothicMaterial material,
-		Matrix transform)
-	{
-		ArgumentNullException.ThrowIfNull(vertexBuffer);
-		ArgumentNullException.ThrowIfNull(indexBuffer);
-		ObjectDisposedException.ThrowIf(_disposed, this);
-
-		var texture = material.Texture;
-		DrawStatic(material, texture, transform);
-		DrawIndexed(
-			_device,
-			PrimitiveType.TriangleList,
-			vertexBuffer,
-			indexBuffer,
-			0,
-			startIndex,
-			primitiveCount);
-
-		DrawCalls++;
-		StaticDrawCalls++;
-		Polygons += primitiveCount;
-	}
-
 	public void Dispose()
 	{
 		if (_disposed)

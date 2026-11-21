@@ -40,7 +40,7 @@ public sealed class WorldRenderer : IDisposable
 			world.Mesh,
 			textures.Resolve(world.Materials));
 		progress(
-			$"World mesh uploaded: {_worldMesh.DrawRangeCount} draw ranges in " +
+			$"World mesh uploaded: {_worldMesh.Parts.Count} parts in " +
 			$"{timer.Elapsed.TotalMilliseconds:0} ms");
 
 		timer.Restart();
@@ -74,21 +74,15 @@ public sealed class WorldRenderer : IDisposable
 		ArgumentNullException.ThrowIfNull(renderer);
 		ObjectDisposedException.ThrowIf(_disposed, this);
 
-		foreach (var range in _worldMesh.Ranges)
+		foreach (var part in _worldMesh.Parts)
 		{
-			if (!renderer.IsVisible(range.Bounds, MaxDrawDistance))
+			if (!renderer.IsVisible(part.BoundingBox, MaxDrawDistance))
 			{
 				renderer.RecordCulledBatch();
 				continue;
 			}
 
-			renderer.DrawRange(
-				_worldMesh.VertexBuffer,
-				_worldMesh.IndexBuffer,
-				range.StartIndex,
-				range.PrimitiveCount,
-				_worldMesh.Materials.Get(range.MaterialIndex),
-				Matrix.Identity);
+			renderer.DrawMeshPart(part, Matrix.Identity);
 		}
 
 		foreach (var (mesh, transform, bounds) in _instances)
