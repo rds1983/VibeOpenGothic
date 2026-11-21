@@ -1,14 +1,17 @@
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using VibeOpenGothic.Core.Logging;
 using VibeOpenGothic.Core.Timing;
+using VibeOpenGothic.Game;
 using VibeOpenGothic.Physics;
 using VibeOpenGothic.Rendering;
 using VibeOpenGothic.Ui;
 using VibeOpenGothic.World;
 using ZenKit;
+using XnaGame = Microsoft.Xna.Framework.Game;
 
 namespace VibeOpenGothic.App;
 
@@ -16,7 +19,7 @@ namespace VibeOpenGothic.App;
 /// MonoGame host. T1.5 owns the window and renderer; world loading arrives in
 /// later tasks.
 /// </summary>
-public sealed class GothicGame : Game
+public sealed class GothicGame : XnaGame
 {
 	private const int ScreenshotWidth = 1280;
 	private const int ScreenshotHeight = 720;
@@ -31,6 +34,11 @@ public sealed class GothicGame : Game
 
 	private GothicRenderer? _renderer;
 	private PhysicsWorld? _physics;
+	private PlayerController? _player;
+	private PlayerCamera? _playerCamera;
+	private PlayerInput _playerInput;
+	private MouseState _lastMouse;
+	private bool _cameraModeWasDown;
 	private UiRoot? _ui;
 	private double _lastUpdateMs;
 	private double _titleRefreshSeconds;
@@ -100,6 +108,11 @@ public sealed class GothicGame : Game
 		Log.Info(
 			"App",
 			$"MonoGame initialized: {WindowWidth}x{WindowHeight}, windowed={IsWindowed}, renderer={GraphicsDevice.GraphicsProfile}");
+
+		if (OperatingSystem.IsWindows())
+		{
+			NativeMethods.SetForegroundWindow(Window.Handle);
+		}
 	}
 
 	protected override void LoadContent()
@@ -130,6 +143,25 @@ public sealed class GothicGame : Game
 			message => Log.Info("Physics", message));
 		_renderer = new GothicRenderer(GraphicsDevice, world);
 		_ui = new UiRoot(this);
+
+		if (string.IsNullOrWhiteSpace(_options.CommandLine.ScreenshotPath))
+		{
+			var start = world.StartPosition ??
+				(world.Bounds.Min + world.Bounds.Max) * 0.5f;
+			var direction = world.StartDirection;
+			if (direction.LengthSquared() <= 0f)
+			{
+				direction = -Vector3.UnitZ;
+			}
+
+			_player = new PlayerController(
+				_physics,
+				start,
+				Vector3.Normalize(direction));
+			_playerCamera = new PlayerCamera(_player);
+			_lastMouse = Mouse.GetState();
+			UpdatePlayerCamera(_playerInput, 0f);
+		}
 	}
 
 	protected override void UnloadContent()
@@ -138,6 +170,8 @@ public sealed class GothicGame : Game
 		_ui = null;
 		_renderer?.Dispose();
 		_renderer = null;
+		_playerCamera = null;
+		_player = null;
 		_physics?.Dispose();
 		_physics = null;
 		base.UnloadContent();
@@ -162,12 +196,58 @@ public sealed class GothicGame : Game
 
 		_debugToggleWasDown = debugToggle;
 
+		var cameraMode = keyboard.IsKeyDown(Keys.F4);
+		if (cameraMode && !_cameraModeWasDown && _playerCamera is not null)
+		{
+			_playerCamera.CycleMode();
+		}
+
+		_cameraModeWasDown = cameraMode;
+
+		var mouse = Mouse.GetState();
+		var lookX = 0f;
+		var lookY = 0f;
+		if (IsActive)
+		{
+			lookX = mouse.X - _lastMouse.X;
+			lookY = mouse.Y - _lastMouse.Y;
+		}
+
+		_lastMouse = mouse;
+		var forward = (keyboard.IsKeyDown(Keys.W) ? 1f : 0f) -
+			(keyboard.IsKeyDown(Keys.S) ? 1f : 0f);
+		var right = (keyboard.IsKeyDown(Keys.D) ? 1f : 0f) -
+			(keyboard.IsKeyDown(Keys.A) ? 1f : 0f);
+		var vertical = (keyboard.IsKeyDown(Keys.E) ? 1f : 0f) -
+			(keyboard.IsKeyDown(Keys.Q) ? 1f : 0f);
+		_playerInput = new PlayerInput(
+			forward,
+			right,
+			vertical,
+			keyboard.IsKeyDown(Keys.LeftShift) || keyboard.IsKeyDown(Keys.RightShift),
+			keyboard.IsKeyDown(Keys.LeftControl) || keyboard.IsKeyDown(Keys.RightControl),
+			lookX,
+			lookY);
+
+		if (_player is not null && _playerCamera is not null)
+		{
+			_playerCamera.Look(_player, lookX, lookY);
+		}
+
 		var elapsed = gameTime.ElapsedGameTime.TotalSeconds;
+		var input = _playerInput;
 		_fixedStep.Advance(elapsed, _ =>
 		{
 			_frames.AddLogicStep();
+			if (_player is not null &&
+				_playerCamera?.Mode != CameraMode.Free)
+			{
+				_player.Update(input, (float)LogicStep.TotalSeconds);
+			}
+
 			_physics?.Step((float)LogicStep.TotalSeconds);
 		});
+		UpdatePlayerCamera(input, (float)elapsed);
 
 		_lastUpdateMs = Stopwatch.GetElapsedTime(updateStart).TotalMilliseconds;
 
@@ -316,6 +396,24 @@ public sealed class GothicGame : Game
 		base.OnExiting(sender, args);
 	}
 
+	private void UpdatePlayerCamera(PlayerInput input, float elapsedSeconds)
+	{
+		if (_player is null ||
+			_playerCamera is null ||
+			_physics is null ||
+			_renderer is null)
+		{
+			return;
+		}
+
+		var pose = _playerCamera.Update(
+			_player,
+			_physics,
+			input,
+			elapsedSeconds);
+		_renderer.Camera.LookAt(pose.Position, pose.Target);
+	}
+
 	private void CaptureWindowState(bool preferClientBounds)
 	{
 		var presentation = GraphicsDevice.PresentationParameters;
@@ -361,5 +459,11 @@ public sealed class GothicGame : Game
 	private string ModeText()
 	{
 		return IsWindowed ? "windowed" : "fullscreen";
+	}
+
+	private static class NativeMethods
+	{
+		[DllImport("user32.dll")]
+		public static extern bool SetForegroundWindow(IntPtr window);
 	}
 }

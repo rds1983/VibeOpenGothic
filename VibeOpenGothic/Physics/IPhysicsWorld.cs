@@ -32,6 +32,15 @@ public interface IPhysicsWorld
 		out PhysicsHit hit,
 		CollisionLayer mask);
 
+	bool CapsuleCast(
+		Vector3 center,
+		float radius,
+		float height,
+		Vector3 direction,
+		float distance,
+		out PhysicsHit hit,
+		CollisionLayer mask);
+
 	int OverlapBox(
 		Vector3 center,
 		Vector3 halfExtents,

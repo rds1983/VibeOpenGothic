@@ -2,6 +2,10 @@
   <Project.ExportOptions Namespace="VibeOpenGothic.Ui" Class="ControlsHud" OutputPath="VibeOpenGothic/Ui" FieldsVisibility="Private" />
   <VerticalStackPanel Spacing="2" Padding="8" Margin="8" HorizontalAlignment="Left" VerticalAlignment="Bottom">
     <Label Id="_titleLabel" Text="Controls" TextColor="White" />
+    <Label Id="_moveLabel" Text="WASD - Move" TextColor="White" />
+    <Label Id="_sprintLabel" Text="Shift - Run; Ctrl - Sneak" TextColor="White" />
+    <Label Id="_lookLabel" Text="Mouse - Look" TextColor="White" />
+    <Label Id="_cameraLabel" Text="F4 - First/third/free camera (Q/E up/down in free)" TextColor="White" />
     <Label Id="_debugToggleLabel" Text="F3 - Toggle debug overlay" TextColor="White" />
   </VerticalStackPanel>
 </Project>

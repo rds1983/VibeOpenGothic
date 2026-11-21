@@ -34,10 +34,10 @@ Game source only: `VibeOpenGothic/` excluding `bin/`, `obj/` and the test projec
 
 | Metric | Value |
 | --- | --- |
-| C# files | 138 |
-| C# lines (physical / non-blank) | 12,422 / 10,670 |
+| C# files | 141 |
+| C# lines (physical / non-blank) | 13,114 / 11,272 |
 | Other source files | 3 (2 `.xmmp`, 1 `.csproj`) |
-| Total source size | 314,883 bytes (307.5 KiB) |
+| Total source size | 330,951 bytes (323.2 KiB) |
 
 Counts include generated Myra files. Update this table when source size changes materially.
 

@@ -11,6 +11,10 @@ public partial class ControlsHud
 
 		Background = new SolidBrush(new Color(0, 0, 0, 180));
 		_titleLabel.TextColor = new Color(210, 210, 210);
+		_moveLabel.TextColor = Color.White;
+		_sprintLabel.TextColor = Color.White;
+		_lookLabel.TextColor = Color.White;
+		_cameraLabel.TextColor = Color.White;
 		_debugToggleLabel.TextColor = Color.White;
 	}
 }

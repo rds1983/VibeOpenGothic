@@ -30,11 +30,10 @@ A task is done only when:
 
 ## Current focus
 
-**T2.2 - Player controller and camera.** T2.1 is complete.
+**T2.3 - Waynet and AI movement.** T2.2 is complete.
 
-> T2.1 adds the Bepu static collision world, layer-aware raycasts and fixed-step
-> stepping. T2.2 adds the capsule character controller, input and cameras on top
-> of it.
+> T2.2 adds the capsule player controller, first/third/free cameras and the
+> world-space VOB transform fix. T2.3 builds the waynet graph and AI movement.
 
 ## Milestone overview
 
@@ -282,7 +281,7 @@ A task is done only when:
   Follow-ups: dedicated VOB collision meshes, non-unit-scale instances and
   per-triangle water/ladder/non-collidable flags are tracked in the backlog.
 
-- [ ] **T2.2 Player controller and camera**
+- [x] **T2.2 Player controller and camera** (2026-11-21)
   Capsule character controller (slope limit, step height, ground snap, wall
   slide), input mapping (walk/run/sneak, look, jump is not a Gothic action),
   first/third-person cameras with collision, and debug free camera. Spawn at the
@@ -291,6 +290,13 @@ A task is done only when:
   **Done when:** the player can walk through Khorinis for several minutes without
   falling through geometry or sticking on stairs (manual checklist + screenshots);
   headless controller tests pass.
+  Result: kinematic 25 cm/180 cm capsule sweep controller with wall slide, 25 cm
+  step-up, 50 cm block, ground snap and gravity; first/third/free camera with
+  collision and WASD/mouse/Shift/Ctrl/F4 input. Capsule casts added to
+  `PhysicsWorld`. Also fixed ZenKit world-space VOB transforms being composed with
+  the parent twice, which made nested props hover. 269 tests; deterministic
+  screenshot hash `55EEF872733A16B7D663B0C606DB44E8C9E852F6CBA1C700B92AA2A021292600`.
+  See Design/04 and Design/07.
 
 - [ ] **T2.3 Waynet and AI movement**
   Convert the waynet to a graph, implement A* pathfinding, waypoint following,
@@ -533,7 +539,9 @@ A task is done only when:
 - Portal-based visibility from the BSP tree.
 - Dedicated static VOB collision meshes, non-unit-scale collision instances, and
   per-triangle water/ladder/non-collidable material flags for the Bepu world.
-- Exact shape overlap and sphere casts for character and camera queries (T2.2).
+- Exact shape overlap and sphere casts for character and camera queries (follow-up).
+- Skip the `zCVobStartpoint` / `INVISIBLE_ZCVOBSTARTPOINT` visual; the startpoint
+  is data only and currently renders as a large marker at the spawn.
 - Hardware skinning alternatives for >72 bones.
 - Optional four-position skinning shader for vanilla armor/variant meshes whose
   bind data is inconsistent under standard LBS (see Design/03).

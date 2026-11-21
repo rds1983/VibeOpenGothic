@@ -33,8 +33,9 @@ The first pass implements stages 1, 2 (visual only) and 5:
 
 - World mesh, static `.MRM`/`.MSH` VOB visuals and waypoints are converted to
   engine space; portal/ghost-occluder polygons are skipped for the visual pass.
-- VOB transforms are composed root-to-leaf and applied once to shared static
-  meshes.
+- ZenKit exposes each VOB position/rotation as a world-space transform, including
+  children. The loader converts it once and applies it directly to shared static
+  meshes; parent composition is only used for runtime local transforms.
 - The `zCVobStartpoint` gives the first free-camera position and direction.
 - BSP queries, sky, collision, spawn logic, NPCs and moving objects remain for
   T1.9/T2.x/T3.x.
@@ -67,8 +68,9 @@ plane. The engine is Y-up, centimetres and **right-handed**. A VOB stores a
 position plus a 3x3 rotation, which the loader converts with
 `Core.CoordinateSystem` before the object is created. Engine rules:
 
-- `WorldTransform` = parent transform * local transform, composed root to leaf,
-  entirely in engine space.
+- ZenKit VOB positions/rotations are world-space (including nested VOBs); the
+  loader converts them directly. For runtime movers, derive the local transform
+  from `parent^-1 * world`; do not apply a parent a second time during loading.
 - Visual meshes are converted to engine space at load; the VOB transform is
   applied once.
 - Waypoint positions and directions are converted at load.
@@ -183,18 +185,44 @@ and focus-target visuals appropriately.
   current ground material for footsteps.
 - Swimming, climbing and ladders are separate states added after walking works.
 
+### T2.2 player pass
+
+- `Game.PlayerController` is a kinematic capsule (`Radius = 25 cm`,
+  `Height = 180 cm`) moved by `PhysicsWorld.CapsuleCast`; it has no Bepu body.
+  It resolves horizontal wall slides, 30 cm step-ups, gravity and a 20 cm ground
+  snap. A 50 cm step is blocked by the controller tests.
+- `PhysicsWorld.CapsuleCast` sweeps a capsule against the static world with the
+  same `CollisionFilter` masks as raycasts. The player mask includes `World`,
+  `StaticProp`, `Npc` and `Item`.
+- `Game.PlayerInput` carries WASD, run/sneak, free-camera up/down and mouse look.
+  `GothicGame` reads the keyboard/mouse, runs the controller at the fixed 60 Hz
+  logic step and drives `PlayerCamera`.
+- `Game.PlayerCamera` implements first-person, third-person and debug free
+  camera modes. Third-person camera collision uses a `Camera`-mask raycast;
+  `F4` cycles the modes. The fixed `--screenshot` camera is deliberately kept
+  separate so deterministic world screenshots do not depend on input or player
+  position.
+- The camera uses the right-handed basis: screen-right is
+  `cross(forward, Up)`, so mouse X decreases yaw and strafe-right moves toward
+  that screen-right direction.
+- Tests cover spawn/snap, walking, wall sliding, 25 cm step-up, 50 cm step
+  blocking and mouse look. The interactive start view was checked with the Orc
+  showcase; a multi-minute Khorinis walk remains a manual acceptance check.
+
 ## Queries
 
 `IPhysicsWorld` exposes:
 
 ```csharp
 bool Raycast(Vector3 from, Vector3 to, out PhysicsHit hit, CollisionLayer mask);
+bool CapsuleCast(Vector3 center, float radius, float height,
+    Vector3 direction, float distance, out PhysicsHit hit, CollisionLayer mask);
 int OverlapBox(Vector3 center, Vector3 halfExtents, CollisionLayer mask,
     List<PhysicsOverlap>? results = null);
 ```
 
-`OverlapBox` is a conservative broad-phase AABB query in T2.1; exact shape
-overlap and `SphereCast` follow with the player controller in T2.2.
+`OverlapBox` is a conservative broad-phase AABB query; exact shape overlap and
+the remaining character queries follow with T2.2/T2.3.
 
 Raycasts are used for focus/interaction, camera collision, line of sight,
 footstep surface and bullet traces. Batch results are cached per frame; do not

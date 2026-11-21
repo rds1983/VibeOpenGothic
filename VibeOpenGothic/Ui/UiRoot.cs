@@ -1,6 +1,7 @@
 using Microsoft.Xna.Framework;
 using Myra;
 using Myra.Graphics2D.UI;
+using XnaGame = Microsoft.Xna.Framework.Game;
 
 namespace VibeOpenGothic.Ui;
 
@@ -15,7 +16,7 @@ public sealed class UiRoot : IDisposable
 	private readonly ControlsHud _controlsHud;
 	private bool _disposed;
 
-	public UiRoot(Game game)
+	public UiRoot(XnaGame game)
 	{
 		ArgumentNullException.ThrowIfNull(game);
 

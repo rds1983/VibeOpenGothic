@@ -72,20 +72,22 @@ public static class WorldLoader
 		var failedModels = 0;
 		Vector3? startPosition = null;
 		var startDirection = -Vector3.UnitZ;
-		var stack = new Stack<(IVirtualObject Vob, Matrix Parent)>();
+		var stack = new Stack<IVirtualObject>();
 		var roots = world.RootObjects;
 		foreach (var root in roots)
 		{
-			stack.Push((root, Matrix.Identity));
+			stack.Push(root);
 		}
 
 		while (stack.Count > 0)
 		{
-			var (vob, parent) = stack.Pop();
+			var vob = stack.Pop();
 			vobCount++;
 
-			var local = GothicVobTransform.ToEngineTransform(vob);
-			var transform = GothicVobTransform.Compose(parent, local);
+			// ZenKit exposes each VOB position/rotation in world space, including
+			// children. Do not apply the parent again; derive local transforms
+			// only when a VOB is moved at runtime.
+			var transform = GothicVobTransform.ToEngineTransform(vob);
 
 			if (startPosition is null &&
 				(vob is StartPoint || vob.Type == VirtualObjectType.zCVobStartpoint))
@@ -173,7 +175,7 @@ public static class WorldLoader
 			var children = vob.Children;
 			foreach (var child in children)
 			{
-				stack.Push((child, transform));
+				stack.Push(child);
 			}
 		}
 

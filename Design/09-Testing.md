@@ -92,6 +92,7 @@ Rules:
 | World loading | VOB transform composition, startpoint/waypoint conversion, mesh/material counts and bounds, `--check-world` real-data run, `newworld.zen` render smoke test |
 | Data diagnostics | `--check-assets` cross-reference counts and missing assets, optional JSON output, `--dump-data` OBJ/MTL/BMP manifest smoke test, outside-install guard |
 | Physics | Drop/rest on a triangle mesh, ray layer masks, conservative overlap queries, fixed-step substep cap, build statistics and `--check-world` real-world collision probe |
+| Player movement | Capsule sweep controller: spawn/snap, walking, wall slide, 25 cm step-up, 50 cm step block, camera look modes |
 | Scripts | External arity, marshaling, dialog flow, quest state, save/load of symbols |
 | Gameplay | Inventory transfer, trade price, combat with fixed seeds, clock advance |
 | Save/load | Round-trip each entity, version migration, atomic write, corrupt archive |

@@ -166,6 +166,10 @@ animation layer during `Prepare`.
   near ~1 cm, far tuned to fog distance (start 20,000 cm).
 - Third-person orbit with collision; first-person for free look/dialogs; debug
   free camera in marvin mode.
+- T2.2 implements `Game.PlayerCamera`: first-person, third-person and debug free
+  modes toggled with `F4` (WASD/mouse; Q/E moves up/down in free mode).
+  Third-person collision uses a `Camera`-mask raycast from the eye to the desired
+  camera position. Camera smoothing and screen shake follow later.
 - Camera smoothing and collision use physics raycasts with the `Camera` mask.
 - Screen shake from scripts is an additive offset applied at the end.
 - Coordinate precision: float is sufficient at centimetre scale; no

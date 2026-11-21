@@ -168,6 +168,72 @@ public sealed unsafe class PhysicsWorld : IPhysicsWorld, IDisposable
 		return true;
 	}
 
+	public bool CapsuleCast(
+		XnaVector3 center,
+		float radius,
+		float height,
+		XnaVector3 direction,
+		float distance,
+		out PhysicsHit hit,
+		CollisionLayer mask)
+	{
+		ObjectDisposedException.ThrowIf(_disposed, this);
+
+		var length = MathF.Max(0f, height - 2f * radius);
+		if (radius <= 0f || distance <= 1e-4f || mask == CollisionLayer.None)
+		{
+			hit = default;
+			return false;
+		}
+
+		var normalized = direction;
+		var lengthSquared = normalized.LengthSquared();
+		if (lengthSquared <= 1e-12f)
+		{
+			hit = default;
+			return false;
+		}
+
+		normalized /= MathF.Sqrt(lengthSquared);
+		var capsule = new Capsule(
+			radius * CmToMetres,
+			length * CmToMetres);
+		var pose = new RigidPose(
+			ToMetres(center),
+			NumericsQuaternion.Identity);
+		var velocity = new BodyVelocity
+		{
+			Linear = ToNumerics(normalized),
+		};
+		var handler = new SweepHitHandler
+		{
+			Filters = _filters,
+			Mask = mask,
+			T = float.MaxValue,
+		};
+		Simulation.Sweep(
+			capsule,
+			pose,
+			velocity,
+			distance * CmToMetres,
+			_pool,
+			ref handler);
+
+		if (!handler.Hit)
+		{
+			hit = default;
+			return false;
+		}
+
+		var hitDistance = handler.T / CmToMetres;
+		hit = new PhysicsHit(
+			center + normalized * hitDistance,
+			new XnaVector3(handler.Normal.X, handler.Normal.Y, handler.Normal.Z),
+			hitDistance,
+			handler.Layer);
+		return true;
+	}
+
 	public int OverlapBox(
 		XnaVector3 center,
 		XnaVector3 halfExtents,
@@ -491,6 +557,58 @@ public sealed unsafe class PhysicsWorld : IPhysicsWorld, IDisposable
 			Hit = true;
 			T = t;
 			Normal = normal;
+			Layer = Filters[collidable].Layer;
+		}
+	}
+
+	private unsafe struct SweepHitHandler : ISweepHitHandler
+	{
+		public CollidableProperty<CollisionFilter> Filters;
+		public CollisionLayer Mask;
+		public bool Hit;
+		public float T;
+		public NumericsVector3 Normal;
+		public CollisionLayer Layer;
+
+		public bool AllowTest(CollidableReference collidable)
+		{
+			return (Mask & Filters[collidable].Layer) != 0;
+		}
+
+		public bool AllowTest(CollidableReference collidable, int childIndex)
+		{
+			return AllowTest(collidable);
+		}
+
+		public void OnHit(
+			ref float maximumT,
+			float t,
+			in NumericsVector3 hitLocation,
+			in NumericsVector3 hitNormal,
+			CollidableReference collidable)
+		{
+			if (t < maximumT)
+			{
+				maximumT = t;
+			}
+
+			if (t < T)
+			{
+				Hit = true;
+				T = t;
+				Normal = hitNormal;
+				Layer = Filters[collidable].Layer;
+			}
+		}
+
+		public void OnHitAtZeroT(
+			ref float maximumT,
+			CollidableReference collidable)
+		{
+			maximumT = 0f;
+			Hit = true;
+			T = 0f;
+			Normal = default;
 			Layer = Filters[collidable].Layer;
 		}
 	}
