@@ -41,14 +41,16 @@ public sealed class UiRoot : IDisposable
 		int drawCalls,
 		int polygons,
 		int culledBatches,
-		int culledInstances)
+		int culledInstances,
+		int instancedDrawCalls)
 	{
 		_debugOverlay.SetStats(
 			fps,
 			drawCalls,
 			polygons,
 			culledBatches,
-			culledInstances);
+			culledInstances,
+			instancedDrawCalls);
 	}
 
 	public void Render()

@@ -47,7 +47,7 @@ public static class SkinSkeletonBuilder
 		for (var index = 0; index < nodes.Count; index++)
 		{
 			var inverse = Matrix.Invert(globals[index]);
-			if (!IsFinite(inverse))
+			if (!inverse.IsFinite())
 			{
 				warnings.Add($"Bone '{nodes[index].Name}' has a singular bind transform; using identity inverse.");
 				inverse = Matrix.Identity;
@@ -96,17 +96,5 @@ public static class SkinSkeletonBuilder
 			state[index] = 2;
 			return globals[index];
 		}
-	}
-
-	private static bool IsFinite(Matrix matrix)
-	{
-		return float.IsFinite(matrix.M11) && float.IsFinite(matrix.M12) &&
-			   float.IsFinite(matrix.M13) && float.IsFinite(matrix.M14) &&
-			   float.IsFinite(matrix.M21) && float.IsFinite(matrix.M22) &&
-			   float.IsFinite(matrix.M23) && float.IsFinite(matrix.M24) &&
-			   float.IsFinite(matrix.M31) && float.IsFinite(matrix.M32) &&
-			   float.IsFinite(matrix.M33) && float.IsFinite(matrix.M34) &&
-			   float.IsFinite(matrix.M41) && float.IsFinite(matrix.M42) &&
-			   float.IsFinite(matrix.M43) && float.IsFinite(matrix.M44);
 	}
 }

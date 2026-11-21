@@ -4,22 +4,26 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using VibeOpenGothic.Assets.Materials;
 using VibeOpenGothic.Assets.Meshes;
+using VibeOpenGothic.Core;
 using VibeOpenGothic.World;
 
 namespace VibeOpenGothic.Rendering;
 
 /// <summary>
 /// Uploads the converted world and its static VOB meshes, then draws them with
-/// stock effects. World submeshes are merged by material; static VOBs use
-/// DigitalRiseModel <see cref="DrMesh"/> containers shared between instances.
+/// stock effects. World submeshes are merged by material; static VOBs are
+/// partitioned into a deterministic spatial-cell grid with one
+/// <see cref="InstancedMeshPart"/> per mesh part and cell. The cell layout is
+/// ready for hardware instancing, but this renderer still submits each visible
+/// instance through <see cref="ForwardRenderer.DrawMeshPart"/>.
 /// </summary>
 public sealed class WorldRenderer : IDisposable
 {
-	private const float MaxDrawDistance = 140000f;
+	private const float CellSize = 2000f;
 
 	private readonly WorldMeshGpu _worldMesh;
 	private readonly Dictionary<string, DrMesh> _staticMeshes = new(StringComparer.OrdinalIgnoreCase);
-	private readonly List<(DrMesh Mesh, Matrix Transform, BoundingBox Bounds)> _instances = new();
+	private readonly SpatialCell[] _cells;
 	private bool _disposed;
 
 	public WorldRenderer(
@@ -44,29 +48,12 @@ public sealed class WorldRenderer : IDisposable
 			$"{timer.Elapsed.TotalMilliseconds:0} ms");
 
 		timer.Restart();
-		foreach (var pair in world.StaticMeshes)
-		{
-			_staticMeshes[pair.Key] = CreateStaticMesh(
-				device,
-				pair.Key,
-				pair.Value.Mesh,
-				textures.Resolve(pair.Value.Materials));
-		}
-
-		foreach (var instance in world.StaticVobs)
-		{
-			if (_staticMeshes.TryGetValue(instance.MeshKey, out var mesh))
-			{
-				_instances.Add((
-					mesh,
-					instance.Transform,
-					TransformBounds(mesh.BoundingBox, instance.Transform)));
-			}
-		}
-
+		var partOrder = CreateStaticMeshes(device, textures, world);
+		_cells = BuildCells(world, partOrder, out var instanceCount, out var partCount);
 		progress(
 			$"Static meshes uploaded: {_staticMeshes.Count} meshes, " +
-			$"{_instances.Count} instances in {timer.Elapsed.TotalMilliseconds:0} ms");
+			$"{instanceCount} instances, {_cells.Length} cells, {partCount} parts in " +
+			$"{timer.Elapsed.TotalMilliseconds:0} ms");
 	}
 
 	public void Draw(ForwardRenderer renderer)
@@ -76,27 +63,12 @@ public sealed class WorldRenderer : IDisposable
 
 		foreach (var part in _worldMesh.Parts)
 		{
-			if (!renderer.IsVisible(part.BoundingBox, MaxDrawDistance))
-			{
-				renderer.RecordCulledBatch();
-				continue;
-			}
-
 			renderer.DrawMeshPart(part, Matrix.Identity);
 		}
 
-		foreach (var (mesh, transform, bounds) in _instances)
+		foreach (var cell in _cells)
 		{
-			if (!renderer.IsVisible(bounds, MaxDrawDistance))
-			{
-				renderer.RecordCulledInstance();
-				continue;
-			}
-
-			foreach (var part in mesh.MeshParts)
-			{
-				renderer.DrawMeshPart(part, transform);
-			}
+			renderer.DrawInstanced(cell);
 		}
 	}
 
@@ -116,21 +88,90 @@ public sealed class WorldRenderer : IDisposable
 		}
 
 		_staticMeshes.Clear();
-		_instances.Clear();
 	}
 
-	private static BoundingBox TransformBounds(BoundingBox bounds, Matrix transform)
+	private Dictionary<DrMeshPart, int> CreateStaticMeshes(
+		GraphicsDevice device,
+		GpuTextureCache textures,
+		WorldAsset world)
 	{
-		var min = new Vector3(float.PositiveInfinity);
-		var max = new Vector3(float.NegativeInfinity);
-		foreach (var corner in bounds.GetCorners())
+		var partOrder = new Dictionary<DrMeshPart, int>();
+		foreach (var pair in world.StaticMeshes.OrderBy(
+			pair => pair.Key,
+			StringComparer.OrdinalIgnoreCase))
 		{
-			var point = Vector3.Transform(corner, transform);
-			min = Vector3.Min(min, point);
-			max = Vector3.Max(max, point);
+			var mesh = CreateStaticMesh(
+				device,
+				pair.Key,
+				pair.Value.Mesh,
+				textures.Resolve(pair.Value.Materials));
+			_staticMeshes[pair.Key] = mesh;
+
+			foreach (var part in mesh.MeshParts)
+			{
+				partOrder[part] = partOrder.Count;
+			}
 		}
 
-		return new BoundingBox(min, max);
+		return partOrder;
+	}
+
+	private SpatialCell[] BuildCells(
+		WorldAsset world,
+		IReadOnlyDictionary<DrMeshPart, int> partOrder,
+		out int instanceCount,
+		out int partCount)
+	{
+		var grid = new SpatialGrid(world.Bounds, CellSize);
+		var cells = new Dictionary<int, CellBuilder>();
+		instanceCount = 0;
+		partCount = 0;
+
+		foreach (var instance in world.StaticVobs)
+		{
+			if (!_staticMeshes.TryGetValue(instance.MeshKey, out var mesh))
+			{
+				continue;
+			}
+
+			var instanceBounds = mesh.BoundingBox.Transform(instance.Transform);
+			var cellIndex = grid.GetCellIndex(instanceBounds);
+			if (!cells.TryGetValue(cellIndex, out var cell))
+			{
+				cell = new CellBuilder();
+				cells.Add(cellIndex, cell);
+			}
+
+			foreach (var part in mesh.MeshParts)
+			{
+				cell.Add(part, instance.Transform, instanceBounds);
+			}
+
+			instanceCount++;
+		}
+
+		var result = new List<SpatialCell>(cells.Count);
+		foreach (var pair in cells.OrderBy(pair => pair.Key))
+		{
+			var builder = pair.Value;
+			var parts = new InstancedMeshPart[builder.Parts.Count];
+			var index = 0;
+			foreach (var partPair in builder.Parts.OrderBy(
+				pair => partOrder[pair.Key]))
+			{
+				var partBuilder = partPair.Value;
+				parts[index++] = new InstancedMeshPart(
+					partPair.Key,
+					partBuilder.Transforms.ToArray(),
+					partBuilder.InstanceBounds.ToArray(),
+					partBuilder.Bounds);
+				partCount++;
+			}
+
+			result.Add(new SpatialCell(builder.Bounds, parts));
+		}
+
+		return result.ToArray();
 	}
 
 	private static DrMesh CreateStaticMesh(
@@ -197,6 +238,55 @@ public sealed class WorldRenderer : IDisposable
 		}
 
 		return result;
+	}
+
+	private sealed class CellBuilder
+	{
+		private bool _hasBounds;
+
+		public Dictionary<DrMeshPart, PartBuilder> Parts { get; } = new();
+
+		public BoundingBox Bounds { get; private set; }
+
+		public void Add(
+			DrMeshPart part,
+			Matrix transform,
+			BoundingBox instanceBounds)
+		{
+			Bounds = _hasBounds
+				? BoundingBox.CreateMerged(Bounds, instanceBounds)
+				: instanceBounds;
+			_hasBounds = true;
+
+			if (!Parts.TryGetValue(part, out var builder))
+			{
+				builder = new PartBuilder();
+				Parts.Add(part, builder);
+			}
+
+			builder.Add(transform, instanceBounds);
+		}
+	}
+
+	private sealed class PartBuilder
+	{
+		private bool _hasBounds;
+
+		public List<Matrix> Transforms { get; } = new();
+
+		public List<BoundingBox> InstanceBounds { get; } = new();
+
+		public BoundingBox Bounds { get; private set; }
+
+		public void Add(Matrix transform, BoundingBox instanceBounds)
+		{
+			Transforms.Add(transform);
+			InstanceBounds.Add(instanceBounds);
+			Bounds = _hasBounds
+				? BoundingBox.CreateMerged(Bounds, instanceBounds)
+				: instanceBounds;
+			_hasBounds = true;
+		}
 	}
 
 }

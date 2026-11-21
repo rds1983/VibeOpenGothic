@@ -2,6 +2,7 @@ using DigitalRiseModel;
 using DigitalRiseModel.Animation;
 using Microsoft.Xna.Framework;
 using VibeOpenGothic.Assets.Skins;
+using VibeOpenGothic.Core;
 
 namespace VibeOpenGothic.Assets.Animation;
 
@@ -208,9 +209,9 @@ public static class GothicModelBuilder
 		ICollection<string> warnings)
 	{
 		if (!matrix.Decompose(out var scale, out var rotation, out var translation) ||
-			!IsFinite(scale) ||
-			!IsFinite(rotation) ||
-			!IsFinite(translation))
+			!scale.IsFinite() ||
+			!rotation.IsFinite() ||
+			!translation.IsFinite())
 		{
 			warnings.Add($"Bone '{boneName}' has a non-decomposable bind transform; using identity.");
 			return SrtTransform.Identity;
@@ -258,16 +259,5 @@ public static class GothicModelBuilder
 					$"'{existingName}' and ignoring '{sourceName}'.");
 			}
 		}
-	}
-
-	private static bool IsFinite(Vector3 value)
-	{
-		return float.IsFinite(value.X) && float.IsFinite(value.Y) && float.IsFinite(value.Z);
-	}
-
-	private static bool IsFinite(Quaternion value)
-	{
-		return float.IsFinite(value.X) && float.IsFinite(value.Y) &&
-			   float.IsFinite(value.Z) && float.IsFinite(value.W);
 	}
 }

@@ -18,8 +18,6 @@ namespace VibeOpenGothic.Rendering;
 /// </summary>
 public sealed class SkinnedModelRenderer : IDisposable
 {
-	private const float MaxDrawDistance = 140000f;
-
 	private readonly Dictionary<string, DrModel> _models = new(StringComparer.OrdinalIgnoreCase);
 	private readonly List<ModelInstanceState> _instances = new();
 	private bool _disposed;
@@ -67,12 +65,6 @@ public sealed class SkinnedModelRenderer : IDisposable
 		foreach (var instance in _instances)
 		{
 			instance.Controller?.Update(elapsed);
-
-			if (!renderer.IsVisible(instance.Bounds, MaxDrawDistance))
-			{
-				renderer.RecordCulledInstance();
-				continue;
-			}
 
 			var mesh = instance.Instance.Model.Root.Mesh;
 			if (mesh is null)
@@ -246,35 +238,11 @@ public sealed class SkinnedModelRenderer : IDisposable
 			controller.Update(TimeSpan.Zero);
 		}
 
-		var bounds = instance.BoundingBox is { } modelBounds
-			? ExpandBounds(TransformBounds(modelBounds, transform), 50f)
-			: (BoundingBox?)null;
-		_instances.Add(new ModelInstanceState(instance, controller, transform, bounds));
-	}
-
-	private static BoundingBox TransformBounds(BoundingBox bounds, Matrix transform)
-	{
-		var min = new Vector3(float.PositiveInfinity);
-		var max = new Vector3(float.NegativeInfinity);
-		foreach (var corner in bounds.GetCorners())
-		{
-			var point = Vector3.Transform(corner, transform);
-			min = Vector3.Min(min, point);
-			max = Vector3.Max(max, point);
-		}
-
-		return new BoundingBox(min, max);
-	}
-
-	private static BoundingBox ExpandBounds(BoundingBox bounds, float margin)
-	{
-		var offset = new Vector3(margin);
-		return new BoundingBox(bounds.Min - offset, bounds.Max + offset);
+		_instances.Add(new ModelInstanceState(instance, controller, transform));
 	}
 
 	private sealed record ModelInstanceState(
 		DrModelInstance Instance,
 		AnimationController? Controller,
-		Matrix Transform,
-		BoundingBox? Bounds);
+		Matrix Transform);
 }

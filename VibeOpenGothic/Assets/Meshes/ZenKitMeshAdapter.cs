@@ -1,4 +1,5 @@
 using Microsoft.Xna.Framework;
+using VibeOpenGothic.Core;
 using ZenKit;
 
 namespace VibeOpenGothic.Assets.Meshes;
@@ -18,7 +19,7 @@ public static class ZenKitMeshAdapter
 		var positions = new Vector3[sourcePositions.Count];
 		for (var index = 0; index < positions.Length; index++)
 		{
-			positions[index] = ToXna(sourcePositions[index]);
+			positions[index] = sourcePositions[index].ToXna();
 		}
 
 		var sourceFeatures = mesh.Features;
@@ -59,7 +60,7 @@ public static class ZenKitMeshAdapter
 		var positions = new Vector3[sourcePositions.Count];
 		for (var index = 0; index < positions.Length; index++)
 		{
-			positions[index] = ToXna(sourcePositions[index]);
+			positions[index] = sourcePositions[index].ToXna();
 		}
 
 		var features = new List<MeshSourceFeature>();
@@ -118,12 +119,7 @@ public static class ZenKitMeshAdapter
 		System.Numerics.Vector2 texture)
 	{
 		return new MeshSourceFeature(
-			new Vector3(normal.X, normal.Y, normal.Z),
-			new Vector2(texture.X, texture.Y));
-	}
-
-	private static Vector3 ToXna(System.Numerics.Vector3 value)
-	{
-		return new Vector3(value.X, value.Y, value.Z);
+			normal.ToXna(),
+			texture.ToXna());
 	}
 }

@@ -114,8 +114,9 @@ public static class MeshBuilder
 		{
 			var triangleList = groups[key];
 			var indexOffset = indices.Count;
-			var min = new Vector3(float.PositiveInfinity);
-			var max = new Vector3(float.NegativeInfinity);
+			var subMeshBounds = new BoundingBox(
+				new Vector3(float.PositiveInfinity),
+				new Vector3(float.NegativeInfinity));
 
 			foreach (var triangle in triangleList)
 			{
@@ -123,9 +124,9 @@ public static class MeshBuilder
 				indices.Add(triangle.B);
 				indices.Add(triangle.C);
 
-				Include(ref min, ref max, vertices[triangle.A].Position);
-				Include(ref min, ref max, vertices[triangle.B].Position);
-				Include(ref min, ref max, vertices[triangle.C].Position);
+				subMeshBounds = subMeshBounds.Include(vertices[triangle.A].Position);
+				subMeshBounds = subMeshBounds.Include(vertices[triangle.B].Position);
+				subMeshBounds = subMeshBounds.Include(vertices[triangle.C].Position);
 			}
 
 			subMeshes.Add(new MeshSubMesh(
@@ -133,7 +134,7 @@ public static class MeshBuilder
 				indices.Count - indexOffset,
 				key.Material,
 				key.LightMap,
-				new BoundingBox(min, max)));
+				subMeshBounds));
 		}
 
 		var bounds = ComputeBounds(vertices);
@@ -185,21 +186,15 @@ public static class MeshBuilder
 			return new BoundingBox(Vector3.Zero, Vector3.Zero);
 		}
 
-		var min = new Vector3(float.PositiveInfinity);
-		var max = new Vector3(float.NegativeInfinity);
-
+		var bounds = new BoundingBox(
+			new Vector3(float.PositiveInfinity),
+			new Vector3(float.NegativeInfinity));
 		foreach (var vertex in vertices)
 		{
-			Include(ref min, ref max, vertex.Position);
+			bounds = bounds.Include(vertex.Position);
 		}
 
-		return new BoundingBox(min, max);
-	}
-
-	private static void Include(ref Vector3 min, ref Vector3 max, Vector3 position)
-	{
-		min = Vector3.Min(min, position);
-		max = Vector3.Max(max, position);
+		return bounds;
 	}
 
 	private readonly record struct CornerKey(int Position, int Feature);

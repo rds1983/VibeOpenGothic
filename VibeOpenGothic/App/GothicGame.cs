@@ -213,7 +213,8 @@ public sealed class GothicGame : Game
 					_renderer.LastDrawCalls,
 					_renderer.LastDrawnPolygons,
 					_renderer.LastCulledBatches,
-					_renderer.LastCulledInstances);
+					_renderer.LastCulledInstances,
+					_renderer.LastInstancedDrawCalls);
 			}
 
 			_ui.Render();
@@ -234,6 +235,7 @@ public sealed class GothicGame : Game
 					"Render",
 					$"First frame: {_renderer.LastDrawCalls} draws, " +
 					$"{_renderer.LastDrawnPolygons} polygons, " +
+					$"{_renderer.LastInstancedDrawCalls} instanced draws, " +
 					$"{_renderer.LastCulledBatches} culled batches, " +
 					$"{_renderer.LastCulledInstances} culled instances");
 			}
@@ -278,7 +280,8 @@ public sealed class GothicGame : Game
 					_renderer.LastDrawCalls,
 					_renderer.LastDrawnPolygons,
 					_renderer.LastCulledBatches,
-					_renderer.LastCulledInstances);
+					_renderer.LastCulledInstances,
+					_renderer.LastInstancedDrawCalls);
 				_ui.Render();
 			}
 		}

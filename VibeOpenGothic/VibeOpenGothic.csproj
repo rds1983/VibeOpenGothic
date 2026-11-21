@@ -17,4 +17,8 @@
     <PackageReference Include="ZenKit" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="VibeOpenGothic.Tests" />
+  </ItemGroup>
+
 </Project>

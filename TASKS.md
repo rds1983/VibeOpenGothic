@@ -30,10 +30,10 @@ A task is done only when:
 
 ## Current focus
 
-**T2.1 - Static collision world.** T1.9 is complete.
+**T2.1 - Static collision world.** T1.10 is complete.
 
-> T1.9 adds frustum/distance culling and overlay counters; the start view dropped
-> from 23,118 to 2,063 draw calls. T2.1 starts the Bepu static collision world.
+> T1.10 adds the static spatial-bucket layout and the potential instanced-draw
+> counter. T2.1 starts the Bepu static collision world.
 
 ## Milestone overview
 
@@ -249,6 +249,21 @@ A task is done only when:
   11,335 culled instances). The deterministic screenshot is unchanged; 237 tests.
   See Design/07 and Design/09.
 
+- [x] **T1.10 Static spatial buckets** (2026-11-21)
+  Partition static VOB instances into a deterministic XZ cell grid and group
+  each cell's instances by `DrMeshPart` (`InstancedMeshPart`). Keep per-instance
+  frustum/distance culling and the current non-instanced draw path; count the
+  draw calls hardware instancing would use and show them in the debug overlay.
+  **Done when:** the cell/bucket structure is built at load, the rendered frame
+  and existing culling behavior are unchanged apart from the new counter, and
+  the overlay reports the potential instanced draw count.
+  Result: 20 m cells; 11,546 static instances become 1,406 cells / 10,869
+  `InstancedMeshPart` buckets. Cell, bucket and instance culling live in
+  `ForwardRenderer`. The start view reports 2,057 actual draws / 535,630
+  polygons and `Instanced: 1,095`; the deterministic screenshot is unchanged.
+  Coarser 40/80 m cells report 753/545 instanced draws but submit more off-screen
+  instances. 253 tests. See Design/07 and Design/09.
+
 ## M2 - Movement and world interaction
 
 - [ ] **T2.1 Static collision world**
@@ -454,6 +469,9 @@ A task is done only when:
   Instancing, culling, LOD selection, asynchronous/streamed loading, VFS lookup
   indexing/caching, reduced per-frame allocations, pooled buffers, and profiling
   of Khorinis and the add-on world. Target 60 FPS at 1080p on modest hardware.
+  Start with hardware instancing over the T1.10 `InstancedMeshPart` buckets and
+  tune the cell size using the `Instanced:` counter plus an "instances submitted"
+  metric.
   **Done when:** benchmark reports and before/after numbers are documented;
   frame-time spikes during world streaming are bounded.
 

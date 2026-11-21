@@ -2,17 +2,20 @@ using DigitalRiseModel;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using VibeOpenGothic.Assets.Materials;
+using VibeOpenGothic.Core;
 
 namespace VibeOpenGothic.Rendering;
 
 /// <summary>
 /// Low-level forward renderer for the stock 3D effects. Callers provide converted
 /// <see cref="DrMeshPart"/> / <see cref="DrMesh"/> objects and a world transform;
-/// this class chooses the effect, applies material state and records frame stats.
+/// this class chooses the effect, owns frustum/distance culling and records frame
+/// stats.
 /// </summary>
 public sealed class ForwardRenderer : IDisposable
 {
 	private static readonly Color FogColor = new(92, 103, 112);
+	private const float SkinnedBoundsMargin = 50f;
 
 	private readonly GraphicsDevice _device;
 	private readonly GpuTextureCache _textures;
@@ -84,33 +87,26 @@ public sealed class ForwardRenderer : IDisposable
 
 	public int CulledInstances { get; private set; }
 
-	public Vector3 CameraPosition { get; private set; }
+	public int InstancedDrawCalls { get; private set; }
 
-	public void RecordCulledBatch()
+	/// <summary>
+	/// Frustum culling distance in world units (cm). Applies to every draw path;
+	/// fog range is configured separately.
+	/// </summary>
+	public float MaxDrawDistance { get; set; } = 140000f;
+
+	private Vector3 _cameraPosition;
+
+	private bool IsVisible(BoundingBox bounds)
 	{
-		CulledBatches++;
-	}
-
-	public void RecordCulledInstance()
-	{
-		CulledInstances++;
-	}
-
-	public bool IsVisible(BoundingBox? bounds, float maxDistance)
-	{
-		if (bounds is null)
-		{
-			return true;
-		}
-
-		var value = bounds.Value;
-		if (!_frustum.Intersects(value))
+		if (!_frustum.Intersects(bounds))
 		{
 			return false;
 		}
 
-		var closest = Vector3.Clamp(CameraPosition, value.Min, value.Max);
-		return Vector3.DistanceSquared(closest, CameraPosition) <= maxDistance * maxDistance;
+		var closest = Vector3.Clamp(_cameraPosition, bounds.Min, bounds.Max);
+		return Vector3.DistanceSquared(closest, _cameraPosition) <=
+			MaxDrawDistance * MaxDrawDistance;
 	}
 
 	public void BeginFrame(Matrix view, Matrix projection)
@@ -127,8 +123,9 @@ public sealed class ForwardRenderer : IDisposable
 		SkinnedDrawCalls = 0;
 		CulledBatches = 0;
 		CulledInstances = 0;
+		InstancedDrawCalls = 0;
 		_frustum = new BoundingFrustum(view * projection);
-		CameraPosition = Matrix.Invert(view).Translation;
+		_cameraPosition = Matrix.Invert(view).Translation;
 
 		_savedDepthStencilState = _device.DepthStencilState;
 		_savedBlendState = _device.BlendState;
@@ -163,7 +160,12 @@ public sealed class ForwardRenderer : IDisposable
 		_frameActive = false;
 	}
 
-	public void DrawMeshPart(
+	/// <summary>
+	/// Culls and draws one mesh part using its local bounds transformed by
+	/// <paramref name="transform"/>. Skinned parts get a small animation margin.
+	/// </summary>
+	/// <returns>True when the part was submitted.</returns>
+	public bool DrawMeshPart(
 		DrMeshPart part,
 		Matrix transform,
 		Matrix[]? skinTransforms = null)
@@ -171,8 +173,84 @@ public sealed class ForwardRenderer : IDisposable
 		ArgumentNullException.ThrowIfNull(part);
 		ObjectDisposedException.ThrowIf(_disposed, this);
 
+		var bounds = GetDrawBounds(part, transform);
+		if (!IsVisible(bounds))
+		{
+			CulledBatches++;
+			return false;
+		}
+
+		DrawMeshPartCore(part, transform, skinTransforms);
+		return true;
+	}
+
+	/// <summary>
+	/// Culls a spatial cell and dispatches its visible instanced batches.
+	/// </summary>
+	public void DrawInstanced(SpatialCell cell)
+	{
+		ArgumentNullException.ThrowIfNull(cell);
+		ObjectDisposedException.ThrowIf(_disposed, this);
+
+		if (!IsVisible(cell.Bounds))
+		{
+			CulledBatches += cell.PartCount;
+			CulledInstances += cell.InstanceCount;
+			return;
+		}
+
+		foreach (var batch in cell.Parts)
+		{
+			DrawInstanced(batch);
+		}
+	}
+
+	/// <summary>
+	/// Temporary non-instanced batch path. Culls the batch and each instance,
+	/// submits visible instances through <see cref="DrawMeshPartCore"/> and
+	/// records one potential instanced draw for the batch. Replace the loop with
+	/// hardware instancing once the instanced effect exists.
+	/// </summary>
+	/// <returns>The number of instances submitted.</returns>
+	public int DrawInstanced(InstancedMeshPart batch)
+	{
+		ArgumentNullException.ThrowIfNull(batch);
+		ObjectDisposedException.ThrowIf(_disposed, this);
+
+		if (!IsVisible(batch.Bounds))
+		{
+			CulledBatches++;
+			CulledInstances += batch.Count;
+			return 0;
+		}
+
+		var visible = 0;
+		for (var index = 0; index < batch.Count; index++)
+		{
+			if (!IsVisible(batch.InstanceBounds[index]))
+			{
+				CulledInstances++;
+				continue;
+			}
+
+			DrawMeshPartCore(batch.Part, batch.Transforms[index]);
+			visible++;
+		}
+
+		if (visible > 0)
+		{
+			InstancedDrawCalls++;
+		}
+
+		return visible;
+	}
+
+	private void DrawMeshPartCore(
+		DrMeshPart part,
+		Matrix transform,
+		Matrix[]? skinTransforms = null)
+	{
 		var material = GetMaterial(part);
-		var texture = material.Texture;
 
 		if (part.Skin is not null)
 		{
@@ -190,12 +268,12 @@ public sealed class ForwardRenderer : IDisposable
 					nameof(skinTransforms));
 			}
 
-			DrawSkinned(material, texture, transform, skinTransforms);
+			DrawSkinned(material, transform, skinTransforms);
 			SkinnedDrawCalls++;
 		}
 		else
 		{
-			DrawStatic(material, texture, transform);
+			DrawStatic(material, transform);
 			StaticDrawCalls++;
 		}
 
@@ -212,6 +290,16 @@ public sealed class ForwardRenderer : IDisposable
 		Polygons += part.PrimitiveCount;
 	}
 
+	private static BoundingBox GetDrawBounds(DrMeshPart part, Matrix transform)
+	{
+		var bounds = transform == Matrix.Identity
+			? part.BoundingBox
+			: part.BoundingBox.Transform(transform);
+		return part.Skin is not null
+			? bounds.Expand(SkinnedBoundsMargin)
+			: bounds;
+	}
+
 	public void Dispose()
 	{
 		if (_disposed)
@@ -225,11 +313,9 @@ public sealed class ForwardRenderer : IDisposable
 		_skinned.Dispose();
 	}
 
-	private void DrawStatic(
-		GothicMaterial material,
-		Texture2D? texture,
-		Matrix transform)
+	private void DrawStatic(GothicMaterial material, Matrix transform)
 	{
+		var texture = material.Texture;
 		_device.RasterizerState = material.IsTwoSided
 			? RasterizerState.CullNone
 			: RasterizerState.CullCounterClockwise;
@@ -258,10 +344,10 @@ public sealed class ForwardRenderer : IDisposable
 
 	private void DrawSkinned(
 		GothicMaterial material,
-		Texture2D? texture,
 		Matrix transform,
 		Matrix[] skinTransforms)
 	{
+		var texture = material.Texture;
 		_device.RasterizerState = material.IsTwoSided
 			? RasterizerState.CullNone
 			: RasterizerState.CullCounterClockwise;

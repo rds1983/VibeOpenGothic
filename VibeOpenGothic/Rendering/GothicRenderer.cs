@@ -68,6 +68,8 @@ public sealed class GothicRenderer : IDisposable
 
 	public int LastCulledInstances => _forward.CulledInstances;
 
+	public int LastInstancedDrawCalls => _forward.InstancedDrawCalls;
+
 	public void Draw(GameTime gameTime)
 	{
 		ArgumentNullException.ThrowIfNull(gameTime);

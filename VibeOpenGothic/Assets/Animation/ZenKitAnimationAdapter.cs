@@ -1,5 +1,6 @@
 using System.Globalization;
 using Microsoft.Xna.Framework;
+using VibeOpenGothic.Core;
 using VibeOpenGothic.Data.Vfs;
 using ZenKit;
 using ZkAnimationFlags = ZenKit.AnimationFlags;
@@ -132,12 +133,12 @@ public static class ZenKitAnimationAdapter
 			return (Vector3.Zero, false);
 		}
 
-		var first = ToXna(samples[0].Position);
-		var last = ToXna(samples[(frames - 1) * nodeCount].Position);
+		var first = samples[0].Position.ToXna();
+		var last = samples[(frames - 1) * nodeCount].Position.ToXna();
 		var hasMotion = false;
 		for (var frame = 0; frame < frames; frame++)
 		{
-			var position = ToXna(samples[frame * nodeCount].Position);
+			var position = samples[frame * nodeCount].Position.ToXna();
 			if (Vector3.DistanceSquared(position, first) >
 				RootMotionThresholdCentimetres * RootMotionThresholdCentimetres)
 			{
@@ -267,11 +268,6 @@ public static class ZenKitAnimationAdapter
 		}
 
 		return result;
-	}
-
-	private static Vector3 ToXna(System.Numerics.Vector3 value)
-	{
-		return new Vector3(value.X, value.Y, value.Z);
 	}
 
 	private static byte[] ReadBytes(IGameVfs vfs, string name)

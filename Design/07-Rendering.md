@@ -246,19 +246,57 @@ Gothic's lighting is mostly baked:
 ### Visibility baseline (T1.9)
 
 - World ranges carry the merged submesh bounding box. Static VOB instances
-  cache their mesh bounds transformed by the VOB matrix, and skinned model
-  instances cache their bind-pose bounds transformed by the VOB matrix.
+  cache their mesh bounds transformed by the VOB matrix. Skinned and attachment
+  mesh parts are culled per part from `DrMeshPart.BoundingBox` transformed by
+  the current instance/node matrix; skinned parts add a 50 cm animation margin.
 - Every frame `ForwardRenderer` builds a `BoundingFrustum` from view*projection
-  and culls ranges, static instances and model instances by frustum plus a
-  140,000 cm distance test using the nearest point of the bounds.
-- Culled counts are exposed in the debug overlay as batches and instances.
-  Animation controllers still advance for culled model instances.
+  and culls by frustum plus the `MaxDrawDistance` property (140,000 cm default)
+  using the nearest point of the bounds.
+- Culling is part of the renderer API: `DrawMeshPart(part, transform,
+  skinTransforms?)` transforms the part bounds internally, while
+  `DrawInstanced(SpatialCell/InstancedMeshPart)` uses the precomputed instance
+  bounds. Both update the frame counters internally. Callers never query the
+  frustum or change render statistics directly; the debug overlay only reads
+  them. Animation controllers still advance for culled model instances.
+  Bounds transforms and the skinned margin use `Core.Mathematics` extension
+  methods with a reused corner buffer, so culling does not allocate per call.
 - Material batching remains the T1.6 merged world ranges and shared `DrMesh`
   instances; instanced material batching is deferred until measurement requires
   it.
 - Start-view benchmark on G2 NotR: 2,063 draws / 537,101 polygons with 924
   culled world batches and 11,335 culled instances, versus 23,118 / 2,732,917
   without culling. The deterministic screenshot is unchanged.
+
+### Static spatial buckets (T1.10)
+
+- Static VOB instances are partitioned at load by a deterministic 2D XZ grid
+  (`SpatialGrid`) derived from the converted world bounds. Cells are 2,000 cm
+  (20 m); an instance is assigned by the centre of its transformed mesh bounds,
+  and empty cells are omitted.
+- Each non-empty cell is a `SpatialCell` with merged world bounds and an
+  `InstancedMeshPart[]` array keyed by `DrMeshPart`. A bucket stores the shared
+  part, `Matrix[] Transforms`, parallel `BoundingBox[] InstanceBounds` and the
+  merged bucket bounds. On `newworld.zen` the 11,546 static instances become
+  1,406 cells and 10,869 buckets.
+- The draw path culls cell bounds, then bucket bounds, then each instance bound.
+  Until hardware instancing lands, `ForwardRenderer.DrawInstanced` takes a
+  `SpatialCell` or `InstancedMeshPart` batch, culls it, submits visible
+  instances through `DrawMeshPart` and records one potential instanced draw for
+  the batch.
+- `ForwardRenderer.InstancedDrawCalls` counts batches with at least one visible
+  instance, i.e. the draw calls a future per-bucket instanced path would use.
+  The debug overlay shows `Instanced: N` and the first-frame log includes it.
+  Start view: 2,063 actual draws versus 1,095 instanced draws.
+- Cell size is a tuning knob. At 4,000 cm and 8,000 cm the start view reports
+  753 and 545 instanced draws respectively, but each visible bucket then submits
+  more off-screen instances. The per-bucket count only helps when it also
+  collapses enough instances; merging visible buckets across cells or dynamic
+  instance compaction remains a later option.
+- Culled counters now include world parts, skinned part culls, static buckets and
+  part instances; the instances number is draw-level (a multi-part mesh counts
+  once per part), not unique VOBs.
+- The 1,081 merged world mesh parts are still global; only static VOBs are
+  spatially bucketed in this step.
 
 ## Skinned models
 
@@ -267,7 +305,10 @@ Gothic's lighting is mostly baked:
 - `WeightsPerVertex = 4`; see [03-Models-And-Skinning.md](03-Models-And-Skinning.md)
   for the 72-bone limit and the fallback plan.
 - Attachments use the owning node's global transform and a static or skinned
-  effect as appropriate.
+  effect as appropriate. Culling is per part: `DrModelInstance.BoundingBox` is
+  only calculated when the model is assigned and is not refreshed by animation,
+  so the renderer transforms each part's local bounds instead (plus the skinned
+  margin).
 - "Fatness" (NPC body scale) is a per-instance shader parameter or a CPU-side
   offset; do not duplicate meshes per NPC.
 

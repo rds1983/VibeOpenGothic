@@ -16,6 +16,7 @@ public partial class DebugOverlay
 		_drawCallsLabel.TextColor = Color.White;
 		_polygonsLabel.TextColor = Color.White;
 		_culledLabel.TextColor = Color.White;
+		_instancedLabel.TextColor = Color.White;
 	}
 
 	public void SetStats(
@@ -23,11 +24,13 @@ public partial class DebugOverlay
 		int drawCalls,
 		int polygons,
 		int culledBatches,
-		int culledInstances)
+		int culledInstances,
+		int instancedDrawCalls)
 	{
 		_fpsLabel.Text = $"FPS: {fps:0.0}";
 		_drawCallsLabel.Text = $"Draw calls: {drawCalls:N0}";
 		_polygonsLabel.Text = $"Polygons: {polygons:N0}";
 		_culledLabel.Text = $"Culled: {culledBatches:N0} batches / {culledInstances:N0} instances";
+		_instancedLabel.Text = $"Instanced: {instancedDrawCalls:N0}";
 	}
 }
