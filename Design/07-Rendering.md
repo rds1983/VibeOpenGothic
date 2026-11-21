@@ -38,7 +38,7 @@ The first world renderer replaces the T1.5 primitive test scene:
   because its 1,081 material ranges need one vertex buffer and merged draw
   ranges.
 - Materials are drawn with `BasicEffect` for solid surfaces and
-  `AlphaTestEffect` for alpha surfaces; `MaterialDesc.IsTwoSided` selects
+  `AlphaTestEffect` for alpha surfaces; `GothicMaterial.IsTwoSided` selects
   `CullNone`. Lightmaps exist in the ZEN, but `MeshVertex` has no lightmap UV
   projection yet, so `DualTextureEffect` is deferred.
 - The camera starts at the startpoint plus eye height, looking along its
@@ -46,7 +46,8 @@ The first world renderer replaces the T1.5 primitive test scene:
   sky colour.
 - Window resize is handled by updating the camera aspect from
   `GraphicsDevice.Viewport` every draw.
-- `GpuTextureCache` still uploads only the top mip.
+- `GpuTextureCache` uploads only the top mip and resolves textures eagerly when
+  the world and models are uploaded, so the first frame does no texture work.
 
 `--check-world` performs the same CPU load without GPU upload and prints mesh,
 VOB, waypoint, bounds, start-point and timing statistics. `--screenshot` renders
@@ -83,12 +84,16 @@ and camera are static, so repeated runs are byte-identical.
   constructing `DrModel`, so `DrModel.Meshes` is populated; GPU upload fills that
   mesh with skinned and attachment parts.
 - Runtime state uses DigitalRiseModel objects directly, with typed tag payloads in
-  `Rendering/DigitalRiseModelTags.cs`: `DrModelTag` stores the asset;
-  `DrMeshPartTag` an attachment's bone index; and `DrMaterialTag` the
-  `MaterialDesc`. Scene instances live in a private
+  `Rendering/DigitalRiseModelTags.cs`: `DrModelTag` stores the asset and
+  `DrMeshPartTag` stores the GPU-resolved `GothicMaterial` plus an optional
+  attachment bone index (null for skinned and static parts). No `DrMaterial` is
+  created. Headless `GothicMaterial` values carry decoded `TextureData` in
+  `TextureSource`; `GpuTextureCache.Resolve` uploads it once at world/model upload
+  time, stores the cached `Texture2D` in `Texture`, and clears `TextureSource` on
+  the GPU-side copy. Scene instances live in a private
   `SkinnedModelRenderer.ModelInstanceState` record holding the
-  `DrModelInstance`, optional `AnimationController` and world `Matrix`. There are
-  no parallel GPU model wrapper classes.
+  `DrModelInstance`, optional `AnimationController`, world `Matrix` and cached
+  bounds. There are no parallel GPU model wrapper classes.
 - Skinned bone matrices come directly from
   `DrModelInstance.GetSkinTransforms(part.Skin.SkinIndex)`; the renderer does not
   keep a second per-instance `Matrix[][]`, because `DrModelInstance` already
@@ -182,14 +187,17 @@ triangle winding. Consequences:
 
 ## Materials and stock effects
 
-`ZenKit.Material` maps to a small `MaterialDesc` used by the renderer:
+`ZenKit.Material` maps to a small `GothicMaterial` used by the renderer. A material
+has two lifecycle states: the headless loader fills `TextureSource` with decoded
+`TextureData`, and `GpuTextureCache.Resolve` creates the cached `Texture2D`,
+stores it in `Texture` and clears `TextureSource` on the copy used for rendering:
 
 | Gothic property | Stock effect mapping |
 | --- | --- |
 | color, texture | `BasicEffect.DiffuseColor`, `.Texture` |
 | `MaterialAlphaMode.AlphaTest` | `AlphaTestEffect` |
 | lightmap present and not disabled | `DualTextureEffect` (texture * lightmap) |
-| `MaterialDesc.IsTwoSided` | `RasterizerState.CullNone` |
+| `GothicMaterial.IsTwoSided` | `RasterizerState.CullNone` |
 | transparent / additive / multiply | matching `BlendState` |
 | texture scale | `BasicEffect.TextureTransform` |
 | texture animation (fps, mapping mode, direction) | animate `TextureTransform` offsets from game time |

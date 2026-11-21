@@ -35,7 +35,10 @@ public sealed class WorldRenderer : IDisposable
 
 		progress("Uploading world mesh...");
 		var timer = Stopwatch.StartNew();
-		_worldMesh = new WorldMeshGpu(device, world.Mesh, world.Materials);
+		_worldMesh = new WorldMeshGpu(
+			device,
+			world.Mesh,
+			textures.Resolve(world.Materials));
 		progress(
 			$"World mesh uploaded: {_worldMesh.DrawRangeCount} draw ranges in " +
 			$"{timer.Elapsed.TotalMilliseconds:0} ms");
@@ -47,8 +50,7 @@ public sealed class WorldRenderer : IDisposable
 				device,
 				pair.Key,
 				pair.Value.Mesh,
-				pair.Value.Materials,
-				textures);
+				textures.Resolve(pair.Value.Materials));
 		}
 
 		foreach (var instance in world.StaticVobs)
@@ -141,8 +143,7 @@ public sealed class WorldRenderer : IDisposable
 		GraphicsDevice device,
 		string name,
 		MeshData mesh,
-		MaterialSet materials,
-		GpuTextureCache textures)
+		MaterialSet materials)
 	{
 		var result = new DrMesh
 		{
@@ -186,15 +187,7 @@ public sealed class WorldRenderer : IDisposable
 				BufferUsage.None);
 			indexBuffer.SetData(indices);
 
-			var descriptor = materials.Get(subMesh.MaterialIndex);
-			var material = new DrMaterial
-			{
-				Name = descriptor.Name,
-				DiffuseColor = descriptor.Color,
-				DiffuseTexture = textures.Get(descriptor.Texture),
-				Tag = new DrMaterialTag(descriptor),
-			};
-
+			var material = materials.Get(subMesh.MaterialIndex);
 			var part = new DrMeshPart(
 				vertexBuffer,
 				indexBuffer,
@@ -203,7 +196,7 @@ public sealed class WorldRenderer : IDisposable
 				vertices.Count,
 				indices.Length / 3)
 			{
-				Material = material,
+				Tag = new DrMeshPartTag(material),
 			};
 
 			result.MeshParts.Add(part);

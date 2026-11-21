@@ -43,7 +43,7 @@ Folders mirror namespaces. Names below are relative to `VibeOpenGothic/`.
 | --- | --- | --- |
 | `VibeOpenGothic.Core` | Logging, command line, settings, time, math helpers, coordinate conversion, diagnostics | BCL, MonoGame math structs |
 | `VibeOpenGothic.Data` | Install discovery, VFS access, version detection, INI reading | Core, ZenKit |
-| `VibeOpenGothic.Assets` | ZenKit data to CPU-side engine data: meshes, textures, models, animation | Core, Data, ZenKit, DigitalRiseModel (CPU types only), MonoGame math |
+| `VibeOpenGothic.Assets` | ZenKit data to CPU-side engine data: meshes, textures, models, animation | Core, Data, ZenKit, DigitalRiseModel (CPU types only), MonoGame math and graphics types (no device) |
 | `VibeOpenGothic.World` | World model: ZEN objects, VOB tree, waynet, triggers, spawning | Core, Data, Assets, Physics |
 | `VibeOpenGothic.Physics` | Bepu world, collision geometry, character controller, queries | Core, Bepu |
 | `VibeOpenGothic.Game` | Session, NPCs, combat, inventory, dialogs, quests, save/load, script externals | Core, Data, Assets, World, Physics |
@@ -61,8 +61,9 @@ Hard rules:
 - ZenKit types (`ZenKit.Mesh`, `ZenKit.World`, `ZenKit.DaedalusVm`, ...) do not
   leave `Data`/`Assets` except for the Daedalus VM facade, which is wrapped by
   `Game.Scripts`. Prefer converting to our types at the boundary.
-- `Assets` may use MonoGame math (`Vector3`, `Matrix`) and DigitalRiseModel CPU
-  types but must not create GPU resources. `Rendering` owns GPU uploads.
+- `Assets` may use MonoGame math and reference graphics types (`GothicMaterial`
+  has an optional `Texture2D` slot filled by `Rendering`) but must not create GPU
+  resources. `Rendering` owns uploads and texture lifetime.
 - `Rendering` may read a converted `WorldAsset` to build GPU resources, but it
   never loads or mutates worlds; `App` loads the world and hands it to the
   renderer.

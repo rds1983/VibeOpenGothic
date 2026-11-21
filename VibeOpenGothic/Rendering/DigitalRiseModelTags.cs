@@ -1,18 +1,15 @@
-using DigitalRiseModel;
-using DigitalRiseModel.Animation;
-using Microsoft.Xna.Framework;
 using VibeOpenGothic.Assets.Materials;
 using VibeOpenGothic.Assets.Models;
 
 namespace VibeOpenGothic.Rendering;
 
 /// <summary>
-/// Typed payloads stored in DigitalRiseModel <c>Tag</c> properties. Keeping the
-/// types explicit makes the object graph readable and avoids casting anonymous
-/// tuples or raw indexes between the renderer and the model containers.
+/// Typed payloads for our DigitalRiseModel usage. Materials live directly on
+/// <see cref="DrMeshPartTag"/> as CPU-side <see cref="GothicMaterial"/> values;
+/// the renderer resolves textures through <see cref="GpuTextureCache"/>.
 /// </summary>
 public sealed record DrModelTag(GothicModelAsset Asset);
 
-public sealed record DrMeshPartTag(int BoneIndex);
-
-public sealed record DrMaterialTag(MaterialDesc Descriptor);
+public sealed record DrMeshPartTag(
+	GothicMaterial Material,
+	int? BoneIndex = null);

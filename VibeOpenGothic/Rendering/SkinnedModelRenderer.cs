@@ -89,10 +89,9 @@ public sealed class SkinnedModelRenderer : IDisposable
 						instance.Transform,
 						instance.Instance.GetSkinTransforms(part.Skin.SkinIndex));
 				}
-				else if (part.Tag is DrMeshPartTag attachmentTag)
+				else if (part.Tag is DrMeshPartTag { BoneIndex: { } boneIndex })
 				{
-					var nodeTransform = instance.Instance.GetBoneGlobalTransform(
-						attachmentTag.BoneIndex);
+					var nodeTransform = instance.Instance.GetBoneGlobalTransform(boneIndex);
 					renderer.DrawMeshPart(part, nodeTransform * instance.Transform);
 				}
 			}
@@ -159,19 +158,10 @@ public sealed class SkinnedModelRenderer : IDisposable
 				BufferUsage.None);
 			indexBuffer.SetData(indices);
 
+			var materials = textures.Resolve(sourceMesh.Materials);
 			foreach (var subMesh in geometry.SubMeshes)
 			{
-				var descriptor = sourceMesh.Materials.Get(subMesh.MaterialIndex);
-				var texture = descriptor.Texture is null
-					? null
-					: textures.Get(descriptor.Texture);
-				var material = new DrMaterial
-				{
-					Name = descriptor.Name,
-					DiffuseColor = descriptor.Color,
-					DiffuseTexture = texture,
-					Tag = new DrMaterialTag(descriptor),
-				};
+				var material = materials.Get(subMesh.MaterialIndex);
 				var part = new DrMeshPart(
 					vertexBuffer,
 					indexBuffer,
@@ -182,7 +172,7 @@ public sealed class SkinnedModelRenderer : IDisposable
 					0,
 					subMesh.IndexOffset)
 				{
-					Material = material,
+					Tag = new DrMeshPartTag(material),
 					Skin = sourceMesh.Skin,
 				};
 
@@ -210,19 +200,10 @@ public sealed class SkinnedModelRenderer : IDisposable
 			indexBuffer.SetData(indices);
 
 			var bone = asset.Model.FindBoneByName(source.NodeName) ?? asset.Model.Root;
+			var materials = textures.Resolve(source.Materials);
 			foreach (var subMesh in source.Mesh.SubMeshes)
 			{
-				var descriptor = source.Materials.Get(subMesh.MaterialIndex);
-				var texture = descriptor.Texture is null
-					? null
-					: textures.Get(descriptor.Texture);
-				var material = new DrMaterial
-				{
-					Name = descriptor.Name,
-					DiffuseColor = descriptor.Color,
-					DiffuseTexture = texture,
-					Tag = new DrMaterialTag(descriptor),
-				};
+				var material = materials.Get(subMesh.MaterialIndex);
 				var part = new DrMeshPart(
 					vertexBuffer,
 					indexBuffer,
@@ -233,8 +214,7 @@ public sealed class SkinnedModelRenderer : IDisposable
 					0,
 					subMesh.IndexOffset)
 				{
-					Material = material,
-					Tag = new DrMeshPartTag(bone.Index),
+					Tag = new DrMeshPartTag(material, bone.Index),
 				};
 
 				mesh.MeshParts.Add(part);

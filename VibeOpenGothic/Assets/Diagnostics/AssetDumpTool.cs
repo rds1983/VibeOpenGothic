@@ -225,7 +225,7 @@ public static class AssetDumpTool
 					$"Kd {material.Color.R / 255f:0.######} " +
 					$"{material.Color.G / 255f:0.######} " +
 					$"{material.Color.B / 255f:0.######}");
-				var texture = textures.Write(material.Texture);
+				var texture = textures.Write(material.TextureSource);
 				if (texture is not null)
 				{
 					writer.WriteLine($"map_Kd {texture}");
@@ -287,7 +287,7 @@ public static class AssetDumpTool
 					$"Kd {material.Color.R / 255f:0.######} " +
 					$"{material.Color.G / 255f:0.######} " +
 					$"{material.Color.B / 255f:0.######}");
-				var texture = textures.Write(material.Texture);
+				var texture = textures.Write(material.TextureSource);
 				if (texture is not null)
 				{
 					writer.WriteLine($"map_Kd {texture}");

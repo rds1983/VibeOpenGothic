@@ -15,7 +15,7 @@ public static class MaterialSetBuilder
 		ArgumentNullException.ThrowIfNull(textures);
 
 		var sourceMaterials = mesh.Materials;
-		var materials = new MaterialDesc[sourceMaterials.Count];
+		var materials = new GothicMaterial[sourceMaterials.Count];
 
 		for (var index = 0; index < materials.Length; index++)
 		{
@@ -37,13 +37,13 @@ public static class MaterialSetBuilder
 		ArgumentNullException.ThrowIfNull(textures);
 
 		var subMeshes = mesh.SubMeshes;
-		var materials = new MaterialDesc[subMeshes.Count];
+		var materials = new GothicMaterial[subMeshes.Count];
 
 		for (var index = 0; index < materials.Length; index++)
 		{
 			var material = subMeshes[index].Material;
 			materials[index] = material is null
-				? MaterialDesc.Default
+				? GothicMaterial.Default
 				: MaterialBuilder.FromSource(
 					ZenKitMaterialAdapter.FromMaterial(material),
 					textures,

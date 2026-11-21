@@ -124,7 +124,7 @@ A task is done only when:
 - [x] **T1.2 Textures and material mapping** (2026-11-20)
   Decode `.TEX` to RGBA (use ZenKit's RGBA mipmaps), build a texture cache with
   placeholder fallbacks, resolve texture names case-insensitively, and map
-  Gothic materials to `MaterialDesc` (color, texture scale, alpha function,
+  Gothic materials to `GothicMaterial` (color, texture scale, alpha function,
   two-sided, lightmap presence, texture animation, wave). Respect
   `MeshSubMesh.MaterialIndex` semantics: world/static meshes index the source
   material list; model (MDM) meshes use the submesh index and its material.
@@ -180,7 +180,7 @@ A task is done only when:
   MonoGame window, `GraphicsDevice` lifecycle, right-handed `GothicCamera`, depth
   buffer, `BasicEffect` test scene (grid, textured cube, unlit normals debug),
   resize handling, screenshot command. No custom shaders. Use `TextureData` and
-  `MaterialDesc` from T1.2; verify texture orientation, alpha modes and the
+  `GothicMaterial` from T1.2; verify texture orientation, alpha modes and the
   two-sided heuristic with real assets.
   **Done when:** the test scene renders correctly (screenshot), converted data is
   verified with an asymmetric texture (readable text, correct winding), and

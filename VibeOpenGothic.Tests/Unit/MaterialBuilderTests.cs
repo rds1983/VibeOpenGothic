@@ -46,7 +46,8 @@ public sealed class MaterialBuilderTests
 		Assert.False(material.IsTwoSided);
 		Assert.True(material.UsesLightmap);
 		Assert.Equal("A.TEX", material.TextureName);
-		Assert.NotNull(material.Texture);
+		Assert.NotNull(material.TextureSource);
+		Assert.Null(material.Texture);
 		Assert.Equal(new Vector2(2, 3), material.TextureScale);
 		Assert.Equal(1f, material.AlphaWeight);
 	}
@@ -142,7 +143,7 @@ public sealed class MaterialBuilderTests
 			DefaultSource with { Texture = "Missing.TGA" },
 			cache);
 
-		Assert.Same(cache.Placeholder, material.Texture);
+		Assert.Same(cache.Placeholder, material.TextureSource);
 		Assert.Equal("Missing.TGA", material.TextureName);
 		Assert.Equal(MaterialAlphaMode.Solid, material.AlphaMode);
 		Assert.Single(missing);
@@ -156,7 +157,7 @@ public sealed class MaterialBuilderTests
 
 		var material = MaterialBuilder.FromSource(DefaultSource, cache);
 
-		Assert.Null(material.Texture);
+		Assert.Null(material.TextureSource);
 		Assert.Null(material.TextureName);
 		Assert.Equal(MaterialAlphaMode.Solid, material.AlphaMode);
 	}

@@ -4,7 +4,7 @@ namespace VibeOpenGothic.Assets.Materials;
 
 public static class MaterialBuilder
 {
-	public static MaterialDesc FromSource(
+	public static GothicMaterial FromSource(
 		MaterialSource source,
 		TextureCache textures,
 		bool enableAlphaTest = true)
@@ -17,7 +17,7 @@ public static class MaterialBuilder
 		var twoSided = alphaMode != MaterialAlphaMode.Solid;
 		var textureName = string.IsNullOrWhiteSpace(source.Texture) ? null : source.Texture;
 
-		return new MaterialDesc(
+		return new GothicMaterial(
 			source.Name,
 			source.Group,
 			source.Color,

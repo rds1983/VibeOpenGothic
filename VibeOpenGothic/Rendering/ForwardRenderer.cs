@@ -171,8 +171,8 @@ public sealed class ForwardRenderer : IDisposable
 		ArgumentNullException.ThrowIfNull(part);
 		ObjectDisposedException.ThrowIf(_disposed, this);
 
-		var descriptor = GetDescriptor(part);
-		var texture = GetTexture(part.Material, descriptor);
+		var material = GetMaterial(part);
+		var texture = material.Texture;
 
 		if (part.Skin is not null)
 		{
@@ -190,12 +190,12 @@ public sealed class ForwardRenderer : IDisposable
 					nameof(skinTransforms));
 			}
 
-			DrawSkinned(descriptor, part.Material, texture, transform, skinTransforms);
+			DrawSkinned(material, texture, transform, skinTransforms);
 			SkinnedDrawCalls++;
 		}
 		else
 		{
-			DrawStatic(descriptor, part.Material, texture, transform);
+			DrawStatic(material, texture, transform);
 			StaticDrawCalls++;
 		}
 
@@ -217,17 +217,15 @@ public sealed class ForwardRenderer : IDisposable
 		IndexBuffer indexBuffer,
 		int startIndex,
 		int primitiveCount,
-		MaterialDesc descriptor,
+		GothicMaterial material,
 		Matrix transform)
 	{
 		ArgumentNullException.ThrowIfNull(vertexBuffer);
 		ArgumentNullException.ThrowIfNull(indexBuffer);
 		ObjectDisposedException.ThrowIf(_disposed, this);
 
-		var texture = descriptor.Texture is null
-			? null
-			: _textures.Get(descriptor.Texture);
-		DrawStatic(descriptor, null, texture, transform);
+		var texture = material.Texture;
+		DrawStatic(material, texture, transform);
 		DrawIndexed(
 			_device,
 			PrimitiveType.TriangleList,
@@ -256,25 +254,24 @@ public sealed class ForwardRenderer : IDisposable
 	}
 
 	private void DrawStatic(
-		MaterialDesc descriptor,
-		DrMaterial? material,
+		GothicMaterial material,
 		Texture2D? texture,
 		Matrix transform)
 	{
-		_device.RasterizerState = descriptor.IsTwoSided
+		_device.RasterizerState = material.IsTwoSided
 			? RasterizerState.CullNone
 			: RasterizerState.CullCounterClockwise;
 		_device.BlendState = BlendState.Opaque;
 
-		var color = material?.DiffuseColor.ToVector3() ?? descriptor.Color.ToVector3();
-		if (descriptor.AlphaMode == MaterialAlphaMode.Solid)
+		var color = material.Color.ToVector3();
+		if (material.AlphaMode == MaterialAlphaMode.Solid)
 		{
 			_basic.World = transform;
 			_basic.LightingEnabled = true;
 			_basic.TextureEnabled = texture is not null;
 			_basic.Texture = texture;
 			_basic.DiffuseColor = color;
-			_basic.Alpha = descriptor.AlphaWeight;
+			_basic.Alpha = material.AlphaWeight;
 			_basic.CurrentTechnique.Passes[0].Apply();
 		}
 		else
@@ -282,29 +279,27 @@ public sealed class ForwardRenderer : IDisposable
 			_alphaTest.World = transform;
 			_alphaTest.Texture = texture ?? _textures.Placeholder;
 			_alphaTest.DiffuseColor = color;
-			_alphaTest.Alpha = descriptor.AlphaWeight;
+			_alphaTest.Alpha = material.AlphaWeight;
 			_alphaTest.CurrentTechnique.Passes[0].Apply();
 		}
 	}
 
 	private void DrawSkinned(
-		MaterialDesc descriptor,
-		DrMaterial? material,
+		GothicMaterial material,
 		Texture2D? texture,
 		Matrix transform,
 		Matrix[] skinTransforms)
 	{
-		_device.RasterizerState = descriptor.IsTwoSided
+		_device.RasterizerState = material.IsTwoSided
 			? RasterizerState.CullNone
 			: RasterizerState.CullCounterClockwise;
-		_device.BlendState = descriptor.AlphaMode == MaterialAlphaMode.Solid
+		_device.BlendState = material.AlphaMode == MaterialAlphaMode.Solid
 			? BlendState.Opaque
 			: BlendState.AlphaBlend;
 
 		_skinned.World = transform;
 		_skinned.Texture = texture ?? _textures.White;
-		_skinned.DiffuseColor = material?.DiffuseColor.ToVector3() ??
-			descriptor.Color.ToVector3();
+		_skinned.DiffuseColor = material.Color.ToVector3();
 		_skinned.SetBoneTransforms(skinTransforms);
 		_skinned.CurrentTechnique.Passes[0].Apply();
 	}
@@ -327,22 +322,10 @@ public sealed class ForwardRenderer : IDisposable
 			primitiveCount);
 	}
 
-	private static MaterialDesc GetDescriptor(DrMeshPart part)
+	private static GothicMaterial GetMaterial(DrMeshPart part)
 	{
-		return part.Material?.Tag is DrMaterialTag tag
-			? tag.Descriptor
-			: MaterialDesc.Default;
-	}
-
-	private Texture2D? GetTexture(DrMaterial? material, MaterialDesc descriptor)
-	{
-		if (material?.DiffuseTexture is not null)
-		{
-			return material.DiffuseTexture;
-		}
-
-		return descriptor.Texture is null
-			? null
-			: _textures.Get(descriptor.Texture);
+		return part.Tag is DrMeshPartTag tag
+			? tag.Material
+			: GothicMaterial.Default;
 	}
 }

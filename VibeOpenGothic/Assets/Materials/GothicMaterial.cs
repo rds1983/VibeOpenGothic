@@ -1,18 +1,21 @@
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using VibeOpenGothic.Assets.Textures;
 
 namespace VibeOpenGothic.Assets.Materials;
 
 /// <summary>
-/// CPU-side material description used by the renderer. Contains no ZenKit or
-/// GraphicsDevice types.
+/// Material description shared by CPU-side conversion and the renderer.
+/// <see cref="TextureSource"/> is the decoded texture data produced by the
+/// headless loader; the rendering layer converts it to <see cref="Texture"/>
+/// once and clears the source on the GPU-side copy.
 /// </summary>
-public sealed record MaterialDesc(
+public sealed record GothicMaterial(
 	string Name,
 	MaterialGroup Group,
 	Color Color,
 	string? TextureName,
-	TextureData? Texture,
+	TextureData? TextureSource,
 	Vector2 TextureScale,
 	MaterialAlphaMode AlphaMode,
 	float AlphaWeight,
@@ -36,7 +39,9 @@ public sealed record MaterialDesc(
 	float WaveGridSize,
 	Vector2 DefaultMapping)
 {
-	public static MaterialDesc Default { get; } = new(
+	public Texture2D? Texture { get; init; }
+
+	public static GothicMaterial Default { get; } = new(
 		string.Empty,
 		MaterialGroup.Undefined,
 		Microsoft.Xna.Framework.Color.White,

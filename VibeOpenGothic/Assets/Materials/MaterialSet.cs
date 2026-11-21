@@ -9,7 +9,7 @@ namespace VibeOpenGothic.Assets.Materials;
 /// </summary>
 public sealed class MaterialSet
 {
-	public MaterialSet(MeshSourceKind sourceKind, IReadOnlyList<MaterialDesc> materials)
+	public MaterialSet(MeshSourceKind sourceKind, IReadOnlyList<GothicMaterial> materials)
 	{
 		ArgumentNullException.ThrowIfNull(materials);
 
@@ -19,10 +19,10 @@ public sealed class MaterialSet
 
 	public MeshSourceKind SourceKind { get; }
 
-	public IReadOnlyList<MaterialDesc> Materials { get; }
+	public IReadOnlyList<GothicMaterial> Materials { get; }
 
-	public MaterialDesc Get(int index)
+	public GothicMaterial Get(int index)
 	{
-		return (uint)index < (uint)Materials.Count ? Materials[index] : MaterialDesc.Default;
+		return (uint)index < (uint)Materials.Count ? Materials[index] : GothicMaterial.Default;
 	}
 }
